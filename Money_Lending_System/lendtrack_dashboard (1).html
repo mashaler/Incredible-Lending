@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LendTrack — Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body,#root{font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:#1a1a1a;background:#f0f0ec}
+input,select,button,textarea{font-family:inherit}
+table{border-collapse:collapse;width:100%}
+.page{display:none}.page.active{display:block}
+.nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:9px 14px;background:none;border:none;border-left:3px solid transparent;text-align:left;cursor:pointer;font-size:13px;color:#555;position:relative}
+.nav-btn.active{background:#e8f2ff;border-left-color:#378ADD;color:#185FA5;font-weight:500}
+.card{background:#fff;border:1px solid #d8d8d4;border-radius:10px;overflow:hidden}
+.card-pad{background:#fff;border:1px solid #d8d8d4;border-radius:10px;padding:16px}
+.tbl-head th{text-align:left;padding:9px 14px;font-size:12px;color:#666;background:#f7f7f5;border-bottom:1px solid #d8d8d4;font-weight:500}
+.tbl-row td{padding:10px 14px;border-bottom:1px solid #eeecea;font-size:13px;color:#1a1a1a}
+.tbl-row:last-child td{border-bottom:none}
+.divider{border:none;border-top:1px solid #d8d8d4;margin:14px 0}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-active{background:#dbeeff;color:#0C447C}
+.badge-completed{background:#d4f5e2;color:#27500A}
+.badge-overdue{background:#ffe0e0;color:#791F1F}
+.badge-pending{background:#fff3cd;color:#633806}
+.badge-approved{background:#d4f5e2;color:#27500A}
+.badge-rejected{background:#ffe0e0;color:#791F1F}
+.stat-card{border-radius:8px;padding:14px}
+.stat-card.blue{background:#e6f1fb;border:1px solid #85B7EB}
+.stat-card.amber{background:#faeeda;border:1px solid #EF9F27}
+.stat-card.green{background:#eaf3de;border:1px solid #97C459}
+.stat-card.red{background:#fcebeb;border:1px solid #F09595}
+.filter-bar{display:flex;gap:3px;background:#e8e8e4;border-radius:8px;padding:3px;width:fit-content;margin-bottom:16px}
+.filter-btn{padding:5px 14px;border-radius:6px;border:none;background:none;color:#666;font-size:13px;cursor:pointer;font-family:inherit}
+.filter-btn.active{background:#fff;color:#1a1a1a;font-weight:500;border:1px solid #c8c8c4}
+.section-label{font-size:11px;font-weight:500;color:#999;text-transform:uppercase;letter-spacing:0.5px;padding-bottom:6px;border-bottom:2px solid #e8e8e4;margin-bottom:10px}
+.drow{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #eeecea;font-size:13px}
+.drow:last-child{border-bottom:none}
+.modal-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:50;align-items:flex-start;justify-content:center;padding-top:40px;overflow-y:auto}
+.modal-wrap.open{display:flex}
+.modal-box{background:#fff;border:1px solid #c8c8c4;border-radius:12px;padding:24px;width:600px;max-width:96%;margin:auto}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #d8d8d4}
+.modal-ftr{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid #d8d8d4}
+.btn-primary{padding:8px 16px;background:#378ADD;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit}
+.btn-primary:hover{background:#2670b8}
+.btn-ghost{padding:8px 16px;background:#fff;color:#1a1a1a;border:1px solid #c8c8c4;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit}
+.btn-ghost:hover{background:#f7f7f5}
+.btn-sm{padding:4px 10px;border-radius:6px;border:1px solid #c8c8c4;background:#fff;color:#1a1a1a;cursor:pointer;font-size:12px;margin-right:4px;font-family:inherit}
+.btn-sm:hover{background:#f7f7f5}
+.btn-sm.danger{border-color:#F09595;background:#fcebeb;color:#791F1F}
+.btn-sm.success{border-color:#97C459;background:#eaf3de;color:#27500A}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:12px;font-weight:500;color:#555}
+.field input,.field select{padding:8px 10px;border:1px solid #c8c8c4;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a;width:100%;font-family:inherit}
+.field input:focus,.field select:focus{outline:none;border-color:#378ADD}
+.notif-bar{display:none;align-items:center;justify-content:space-between;background:#e6f1fb;border:1px solid #85B7EB;border-radius:8px;padding:11px 16px;margin-bottom:16px}
+.notif-bar.show{display:flex}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#378ADD;color:#fff;font-size:11px;font-weight:600;flex-shrink:0}
+@media print{
+  nav,.modal-wrap,.notif-bar{display:none!important}
+  main{padding:0!important}
+}
+</style>
+</head>
+<body>
+<div id="root" style="display:flex;min-height:100vh;background:#f0f0ec;">
+
+<nav style="width:188px;flex-shrink:0;background:#fff;border-right:1px solid #d8d8d4;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;">
+  <div style="padding:15px 16px;border-bottom:1px solid #d8d8d4;">
+    <div style="font-size:15px;font-weight:600;color:#185FA5;">LendTrack</div>
+    <div style="font-size:11px;color:#888;margin-top:2px;">Lending management</div>
+  </div>
+  <div style="padding:6px 0;flex:1;overflow-y:auto;">
+    <button onclick="nav('dashboard')" id="nb-dashboard" class="nav-btn active">&#9632; Dashboard</button>
+    <button onclick="nav('applications')" id="nb-applications" class="nav-btn">
+      &#9670; Applications
+      <span id="app-badge" style="display:none;margin-left:auto;background:#E24B4A;color:#fff;border-radius:50%;font-size:10px;font-weight:600;width:18px;height:18px;align-items:center;justify-content:center;flex-shrink:0;"></span>
+    </button>
+    <button onclick="nav('loans')" id="nb-loans" class="nav-btn">&#9670; Loans</button>
+    <button onclick="nav('borrowers')" id="nb-borrowers" class="nav-btn">&#9711; Borrowers</button>
+    <button onclick="nav('payments')" id="nb-payments" class="nav-btn">&#10003; Payments</button>
+    <button onclick="nav('reports')" id="nb-reports" class="nav-btn">&#9650; Reports</button>
+    <button onclick="nav('portal-link')" id="nb-portal-link" class="nav-btn">&#128279; Apply portal</button>
+  </div>
+  <div style="padding:12px 14px;border-top:1px solid #d8d8d4;">
+    <button onclick="refreshApps()" style="width:100%;padding:6px;background:#f7f7f5;border:1px solid #d8d8d4;border-radius:6px;cursor:pointer;font-size:12px;color:#555;font-family:inherit;">&#8635; Refresh applications</button>
+  </div>
+</nav>
+
+<main style="flex:1;padding:24px;overflow:auto;">
+
+  <div id="page-dashboard" class="page active">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-size:18px;font-weight:600;">Dashboard</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="nav('portal-link')" class="btn-ghost">&#128279; Share apply link</button>
+        <button onclick="openLoanModal()" class="btn-primary">+ New loan</button>
+      </div>
+    </div>
+    <div id="notif-bar" class="notif-bar">
+      <span style="color:#0C447C;font-size:13px;" id="notif-text"></span>
+      <button onclick="nav('applications')" class="btn-primary" style="font-size:12px;padding:5px 12px;">Review now</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px;">
+      <div class="stat-card blue"><div style="font-size:12px;color:#185FA5;margin-bottom:6px;">Total loaned out</div><div id="m-total" style="font-size:22px;font-weight:600;color:#0C447C;">R0</div></div>
+      <div class="stat-card amber"><div style="font-size:12px;color:#854F0B;margin-bottom:6px;">Outstanding</div><div id="m-outstanding" style="font-size:22px;font-weight:600;color:#633806;">R0</div></div>
+      <div class="stat-card green"><div style="font-size:12px;color:#3B6D11;margin-bottom:6px;">Interest earned</div><div id="m-interest" style="font-size:22px;font-weight:600;color:#27500A;">R0</div></div>
+      <div class="stat-card red"><div style="font-size:12px;color:#A32D2D;margin-bottom:6px;">Pending applications</div><div id="m-pending" style="font-size:22px;font-weight:600;color:#791F1F;">0</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px;">
+      <div class="card-pad">
+        <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #d8d8d4;">Recent loans</div>
+        <table><thead class="tbl-head"><tr><th>Borrower</th><th>Amount</th><th>Status</th></tr></thead><tbody id="dash-loans"></tbody></table>
+      </div>
+      <div class="card-pad">
+        <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #d8d8d4;">Active loans progress</div>
+        <div id="dash-active"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="page-applications" class="page">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-size:18px;font-weight:600;">Loan applications</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="refreshApps()" class="btn-ghost">&#8635; Refresh</button>
+        <button onclick="nav('portal-link')" class="btn-ghost">&#128279; Portal setup</button>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <button onclick="setAppFilter('pending',this)" id="af-pending" class="filter-btn active">Pending</button>
+      <button onclick="setAppFilter('approved',this)" id="af-approved" class="filter-btn">Approved</button>
+      <button onclick="setAppFilter('rejected',this)" id="af-rejected" class="filter-btn">Rejected</button>
+    </div>
+    <div id="applications-list"></div>
+  </div>
+
+  <div id="page-portal-link" class="page">
+    <div style="margin-bottom:20px;font-size:18px;font-weight:600;">Borrower application portal</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:900px;">
+
+      <div class="card-pad">
+        <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #d8d8d4;">How it works</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span class="step-num">1</span>
+            <div><div style="font-size:13px;font-weight:500;margin-bottom:3px;">Download the application form</div><div style="font-size:12px;color:#888;line-height:1.5;">Click the button below to download <strong>lendtrack_apply.html</strong> — a standalone form file.</div></div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span class="step-num">2</span>
+            <div><div style="font-size:13px;font-weight:500;margin-bottom:3px;">Send it to your borrower</div><div style="font-size:12px;color:#888;line-height:1.5;">Share the file via WhatsApp, email, or any file sharing service. The borrower opens it in their browser.</div></div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span class="step-num">3</span>
+            <div><div style="font-size:13px;font-weight:500;margin-bottom:3px;">Borrower fills &amp; submits</div><div style="font-size:12px;color:#888;line-height:1.5;">They complete the form and click Submit. The application saves locally on their device.</div></div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span class="step-num">4</span>
+            <div><div style="font-size:13px;font-weight:500;margin-bottom:3px;">Borrower sends back the file</div><div style="font-size:12px;color:#888;line-height:1.5;">They send you back the <strong>lendtrack_apply.html</strong> file (it now contains their application data). You open it on your device to import.</div></div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span class="step-num">5</span>
+            <div><div style="font-size:13px;font-weight:500;margin-bottom:3px;">Review &amp; approve</div><div style="font-size:12px;color:#888;line-height:1.5;">Go to the Applications tab, review the application, and approve or reject it.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card-pad">
+          <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #d8d8d4;">Step 1 — Send the form</div>
+          <p style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.5;">Download the borrower application form and send it to your borrower via WhatsApp or email.</p>
+          <a href="lendtrack_apply.html" download="lendtrack_apply.html" style="display:block;text-align:center;padding:10px 16px;background:#378ADD;color:#fff;border-radius:8px;text-decoration:none;font-size:13px;font-weight:500;margin-bottom:8px;">&#11015; Download application form</a>
+          <p style="font-size:11px;color:#aaa;text-align:center;">Send this file to your borrower via WhatsApp, email, etc.</p>
+        </div>
+
+        <div class="card-pad">
+          <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #d8d8d4;">Step 2 — Import submitted application</div>
+          <p style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.5;">Once the borrower sends back the filled form file, import it here to load their application.</p>
+          <label style="display:block;text-align:center;padding:10px 16px;background:#fff;color:#1a1a1a;border:1px solid #c8c8c4;border-radius:8px;font-size:13px;cursor:pointer;margin-bottom:8px;">
+            &#128194; Import submitted form
+            <input type="file" accept=".html" onchange="importAppFile(this)" style="display:none;">
+          </label>
+          <p style="font-size:11px;color:#aaa;text-align:center;">Select the .html file the borrower sent back to you</p>
+          <div id="import-result" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="card-pad" style="background:#f7f7f5;">
+          <div style="font-size:12px;color:#888;line-height:1.6;">
+            <strong style="color:#555;">Tip:</strong> If you and the borrower are using the same computer and browser, submitted applications appear automatically in the Applications tab — no import needed. Just click <em>Refresh</em>.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="page-loans" class="page">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-size:18px;font-weight:600;">Loans</div>
+      <button onclick="openLoanModal()" class="btn-primary">+ New loan</button>
+    </div>
+    <div class="filter-bar">
+      <button onclick="setFilter('all',this)" id="lf-all" class="filter-btn active">All</button>
+      <button onclick="setFilter('active',this)" id="lf-active" class="filter-btn">Active</button>
+      <button onclick="setFilter('completed',this)" id="lf-completed" class="filter-btn">Completed</button>
+      <button onclick="setFilter('overdue',this)" id="lf-overdue" class="filter-btn">Overdue</button>
+    </div>
+    <div class="card">
+      <table><thead class="tbl-head"><tr><th>Borrower</th><th>Principal</th><th>Rate</th><th>Outstanding</th><th>Status</th><th>Actions</th></tr></thead><tbody id="loans-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <div id="page-borrowers" class="page">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-size:18px;font-weight:600;">Borrowers</div>
+      <button onclick="openBorrowerModal()" class="btn-primary">+ Add borrower</button>
+    </div>
+    <div class="card">
+      <table><thead class="tbl-head"><tr><th>Name</th><th>Phone</th><th>Active loans</th><th>Total borrowed</th><th>Actions</th></tr></thead><tbody id="borrowers-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <div id="page-payments" class="page">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-size:18px;font-weight:600;">Payments</div>
+      <button onclick="openPaymentModal(null)" class="btn-primary">+ Record payment</button>
+    </div>
+    <div class="card">
+      <table><thead class="tbl-head"><tr><th>Date</th><th>Borrower</th><th>Amount</th><th>Principal</th><th>Interest</th><th>Notes</th></tr></thead><tbody id="payments-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <div id="page-reports" class="page">
+    <div style="margin-bottom:20px;font-size:18px;font-weight:600;">Reports</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="card-pad">
+        <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #d8d8d4;">Portfolio summary</div>
+        <div id="report-summary"></div>
+      </div>
+      <div class="card-pad">
+        <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #d8d8d4;">Loan status breakdown</div>
+        <div style="position:relative;height:200px;"><canvas id="statusChart"></canvas></div>
+      </div>
+      <div class="card-pad">
+        <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #d8d8d4;">Top borrowers by balance</div>
+        <div id="report-borrowers"></div>
+      </div>
+      <div class="card-pad">
+        <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #d8d8d4;">Monthly interest earned</div>
+        <div style="position:relative;height:200px;"><canvas id="interestChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<div id="modal-wrap" class="modal-wrap">
+  <div class="modal-box">
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const STORAGE_KEY = 'lendtrack5';
+let loans=[],borrowers=[],payments=[],applications=[],loanFilter='all',appFilter='pending';
+let sChart=null,iChart=null;
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function fmt(n){return 'R'+Math.round(n).toLocaleString();}
+function fmtD(n){return 'R'+(+n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function todayStr(){return new Date().toISOString().split('T')[0];}
+function fmtDate(s){if(!s)return'—';const d=new Date(s);return d.toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'});}
+
+function calcLoan(p,r,t,type){
+  const rt=r/100;let monthly,total,totalInterest;
+  if(type==='equal'){monthly=rt===0?p/t:p*(rt*Math.pow(1+rt,t))/(Math.pow(1+rt,t)-1);total=monthly*t;totalInterest=total-p;}
+  else if(type==='interest-only'){monthly=p*rt;total=monthly*(t-1)+(p+monthly);totalInterest=monthly*t;}
+  else{totalInterest=p*rt*t;total=p+totalInterest;monthly=total/t;}
+  return{monthly,total,totalInterest};
+}
+function getBalance(loan){
+  const paid=payments.filter(p=>p.loanId===loan.id).reduce((s,p)=>s+p.amount,0);
+  const{total}=calcLoan(loan.principal,loan.rate,loan.term,loan.reptype);
+  return Math.max(0,total-paid);
+}
+function getStatus(loan){
+  if(getBalance(loan)<=0)return'completed';
+  const due=new Date(loan.startDate);due.setMonth(due.getMonth()+1);
+  return due<new Date()?'overdue':'active';
+}
+function badge(s){
+  const cls={active:'badge-active',completed:'badge-completed',overdue:'badge-overdue',pending:'badge-pending',approved:'badge-approved',rejected:'badge-rejected'};
+  return`<span class="badge ${cls[s]||''}">${s}</span>`;
+}
+function drow(label,val,style=''){
+  return`<div class="drow"><span style="color:#666;">${label}</span><span style="${style}">${val}</span></div>`;
+}
+
+function nav(page){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
+  const pe=document.getElementById('page-'+page);if(pe)pe.classList.add('active');
+  const nb=document.getElementById('nb-'+page);if(nb)nb.classList.add('active');
+  const fns={dashboard:renderDashboard,applications:renderApplications,loans:renderLoans,borrowers:renderBorrowers,payments:renderPayments,reports:renderReports};
+  if(fns[page])fns[page]();
+}
+
+function openModal(html){document.getElementById('modal-content').innerHTML=html;document.getElementById('modal-wrap').classList.add('open');}
+function closeModal(){document.getElementById('modal-wrap').classList.remove('open');}
+document.getElementById('modal-wrap').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+function mhdr(title){return`<div class="modal-hdr"><div style="font-size:16px;font-weight:600;">${title}</div><button onclick="closeModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888;line-height:1;">&#215;</button></div>`;}
+function mftr(cancelFn,confirmFn,label){return`<div class="modal-ftr"><button onclick="${cancelFn}" class="btn-ghost">Cancel</button><button onclick="${confirmFn}" class="btn-primary">${label}</button></div>`;}
+function fieldHtml(id,label,type='text',ph='',extra=''){return`<div class="field"><label>${label}</label><input id="${id}" type="${type}" placeholder="${ph}" ${extra}></div>`;}
+function selHtml(id,label,opts){return`<div class="field"><label>${label}</label><select id="${id}">${opts}</select></div>`;}
+function alertBox(txt,type='err'){
+  const bg=type==='err'?'#fcebeb':'#eaf3de',bc=type==='err'?'#F09595':'#97C459',col=type==='err'?'#791F1F':'#27500A';
+  return`<div style="background:${bg};color:${col};border:1px solid ${bc};padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:10px;">${txt}</div>`;
+}
+
+function updateAppBadge(){
+  const count=applications.filter(a=>a.status==='pending').length;
+  const b=document.getElementById('app-badge');
+  b.style.display=count>0?'inline-flex':'none';
+  b.textContent=count;
+  document.getElementById('m-pending').textContent=count;
+  const bar=document.getElementById('notif-bar');
+  if(count>0){bar.classList.add('show');document.getElementById('notif-text').textContent=`You have ${count} pending loan application${count>1?'s':''} waiting for review.`;}
+  else bar.classList.remove('show');
+}
+
+function refreshApps(){
+  load(true);
+  const cur=document.querySelector('.page.active');
+  if(cur&&cur.id==='page-applications')setTimeout(renderApplications,100);
+}
+
+function importAppFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const html=e.target.result;
+      const match=html.match(/localStorage\.setItem\(['"]lendtrack5['"],\s*JSON\.stringify\(([^)]+)\)\)/);
+      const dataMatch=html.match(/const STORAGE_KEY\s*=\s*['"]lendtrack5['"]/);
+      const inlineMatch=html.match(/"applications"\s*:\s*(\[[\s\S]*?\])\s*[,}]/);
+
+      const raw=localStorage.getItem(STORAGE_KEY);
+      const current=raw?JSON.parse(raw):{loans:[],borrowers:[],payments:[],applications:[]};
+      current.applications=current.applications||[];
+
+      const scriptMatch=html.match(/applications\.push\((\{[\s\S]*?\})\)/);
+
+      const storageMatch=html.match(/localStorage\.setItem\("lendtrack5",\s*(.*?)\)/s);
+
+      let imported=0;
+      const jsonMatch=html.match(/\{"id":"[^"]+","first":"[^"]+","last":"[^"]+","phone":"[^"]+","email":"[^"]+"[^}]+,"status":"pending"[^}]*\}/g);
+      if(jsonMatch){
+        jsonMatch.forEach(appJson=>{
+          try{
+            const app=JSON.parse(appJson);
+            const already=current.applications.find(a=>a.id===app.id);
+            if(!already){current.applications.push(app);imported++;}
+          }catch(e2){}
+        });
+      }
+
+      if(imported>0){
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(current));
+        applications=current.applications;
+        updateAppBadge();
+        document.getElementById('import-result').innerHTML=alertBox(`Successfully imported ${imported} application${imported>1?'s':''}. Go to the Applications tab to review.`,'ok');
+      } else {
+        const raw2=html.match(/"lendtrack5"\s*,\s*JSON\.stringify\((\{.*?\})\)/s);
+        document.getElementById('import-result').innerHTML=alertBox('No new applications found in this file. The borrower may not have submitted yet, or the application was already imported.');
+      }
+    }catch(err){
+      document.getElementById('import-result').innerHTML=alertBox('Could not read this file. Make sure you selected the correct lendtrack_apply.html file.');
+    }
+  };
+  reader.readAsText(file);
+  input.value='';
+}
+
+function renderDashboard(){
+  document.getElementById('m-total').textContent=fmt(loans.reduce((s,l)=>s+l.principal,0));
+  document.getElementById('m-outstanding').textContent=fmt(loans.reduce((s,l)=>s+getBalance(l),0));
+  document.getElementById('m-interest').textContent=fmt(payments.reduce((s,p)=>s+p.interest,0));
+  updateAppBadge();
+  const recent=[...loans].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,6);
+  document.getElementById('dash-loans').innerHTML=recent.length===0
+    ?'<tr><td colspan="3" style="padding:20px;text-align:center;color:#888;">No loans yet.</td></tr>'
+    :recent.map(l=>{const b=borrowers.find(x=>x.id===l.borrowerId);return`<tr class="tbl-row" style="cursor:pointer;" onclick="viewLoan('${l.id}')"><td style="font-weight:500;">${b?b.first+' '+b.last:'?'}</td><td>${fmt(l.principal)}</td><td>${badge(getStatus(l))}</td></tr>`;}).join('');
+  const active=loans.filter(l=>getStatus(l)!=='completed');
+  document.getElementById('dash-active').innerHTML=active.length===0
+    ?'<div style="color:#888;font-size:13px;padding:8px 0;">No active loans.</div>'
+    :active.map(l=>{const b=borrowers.find(x=>x.id===l.borrowerId);const bal=getBalance(l);const{total}=calcLoan(l.principal,l.rate,l.term,l.reptype);const pct=Math.min(100,Math.round(((total-bal)/total)*100));
+    return`<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span style="font-weight:500;">${b?b.first+' '+b.last:'?'}</span><span style="color:#888;">${fmtD(bal)} left</span></div><div style="height:7px;background:#e8e8e4;border-radius:4px;overflow:hidden;border:1px solid #d8d8d4;"><div style="height:100%;width:${pct}%;background:#378ADD;border-radius:4px;"></div></div><div style="font-size:11px;color:#888;margin-top:3px;">${pct}% repaid</div></div>`;}).join('');
+}
+
+function renderApplications(){
+  const list=applications.filter(a=>a.status===appFilter);
+  const container=document.getElementById('applications-list');
+  if(list.length===0){container.innerHTML=`<div class="card-pad" style="text-align:center;color:#888;font-size:13px;padding:40px;">No ${appFilter} applications.</div>`;return;}
+  container.innerHTML=list.map(a=>`
+    <div class="card-pad" style="margin-bottom:12px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eeecea;">
+        <div><div style="font-size:15px;font-weight:600;">${a.first} ${a.last}</div><div style="font-size:12px;color:#888;margin-top:2px;">${a.email} &middot; ${a.phone}${a.idnum?' &middot; ID: '+a.idnum:''}</div></div>
+        <div style="display:flex;align-items:center;gap:8px;">${badge(a.status)}<span style="font-size:11px;color:#888;">${a.submittedAt}</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px;">
+        <div style="background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#666;margin-bottom:3px;">Requested</div><div style="font-size:14px;font-weight:600;color:#0C447C;">${fmt(a.amount)}</div></div>
+        <div style="background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#666;margin-bottom:3px;">Term</div><div style="font-size:14px;font-weight:500;">${a.term} months</div></div>
+        <div style="background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#666;margin-bottom:3px;">Income</div><div style="font-size:14px;font-weight:500;">${a.income?fmt(a.income):'—'}</div></div>
+        <div style="background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#666;margin-bottom:3px;">Employment</div><div style="font-size:12px;font-weight:500;">${a.employment||'—'}</div></div>
+      </div>
+      <div style="font-size:12px;color:#555;background:#f7f7f5;border-radius:6px;padding:8px 10px;border:1px solid #d8d8d4;margin-bottom:${appFilter==='pending'?'12px':'0'};">
+        <strong>Purpose:</strong> ${a.purpose}${a.notes?'<br><strong>Notes:</strong> '+a.notes:''}
+        ${a.address?'<br><strong>Address:</strong> '+a.address:''}
+      </div>
+      ${appFilter==='pending'?`<div style="display:flex;gap:8px;"><button onclick="approveApp('${a.id}')" class="btn-sm success">&#10003; Approve</button><button onclick="rejectApp('${a.id}')" class="btn-sm danger">&#215; Reject</button></div>`:''}
+    </div>`).join('');
+}
+
+function setAppFilter(f,btn){
+  appFilter=f;
+  document.querySelectorAll('#af-pending,#af-approved,#af-rejected').forEach(el=>el.classList.remove('active'));
+  btn.classList.add('active');
+  renderApplications();
+}
+
+function approveApp(id){
+  const a=applications.find(x=>x.id===id);if(!a)return;
+  const existing=borrowers.find(b=>b.phone===a.phone&&b.first===a.first&&b.last===a.last);
+  let borrowerId=existing?existing.id:uid();
+  if(!existing)borrowers.push({id:borrowerId,first:a.first,last:a.last,phone:a.phone,idnum:a.idnum||'',address:a.address||'',email:a.email||'',createdAt:todayStr()});
+  a.status='approved';persist();updateAppBadge();renderApplications();
+  openModal(mhdr('Approve — set loan terms')+`
+    <div style="background:#e6f1fb;border:1px solid #85B7EB;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13px;color:#0C447C;">${a.first} ${a.last} &mdash; requested ${fmt(a.amount)} for ${a.term} months &middot; Income: ${a.income?fmt(a.income):'not provided'}</div>
+    <div id="loan-alert"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      ${fieldHtml('f-principal','Principal (R)','number',a.amount,'min="1" value="'+a.amount+'"')}
+      ${fieldHtml('f-rate','Interest rate (% / month)','number','3','step="0.1" min="0" value="3"')}
+      ${fieldHtml('f-term','Term (months)','number',a.term,'min="1" value="'+a.term+'"')}
+      ${selHtml('f-reptype','Repayment type','<option value="equal">Equal installments</option><option value="interest-only">Interest only (balloon)</option><option value="flat">Flat rate</option>')}
+      ${fieldHtml('f-startdate','Start date','date','')}
+    </div>
+    <div id="loan-preview" style="margin-top:12px;"></div>
+    ${mftr('closeModal()',`saveApprovedLoan('${borrowerId}')`, 'Create loan')}`);
+  document.getElementById('f-startdate').value=todayStr();
+  ['f-principal','f-rate','f-term','f-reptype'].forEach(id=>document.getElementById(id).addEventListener('input',previewLoan));
+  previewLoan();
+}
+
+function saveApprovedLoan(borrowerId){
+  const principal=+document.getElementById('f-principal').value,rate=+document.getElementById('f-rate').value,term=+document.getElementById('f-term').value,reptype=document.getElementById('f-reptype').value,startDate=document.getElementById('f-startdate').value;
+  if(!principal||!rate||!term||!startDate){document.getElementById('loan-alert').innerHTML=alertBox('Please fill in all required fields.');return;}
+  loans.push({id:uid(),borrowerId,principal,rate,term,reptype,startDate,notes:'From online application',createdAt:todayStr()});
+  persist();closeModal();renderDashboard();
+}
+
+function rejectApp(id){
+  if(!confirm('Reject this application?'))return;
+  const a=applications.find(x=>x.id===id);if(a)a.status='rejected';
+  persist();updateAppBadge();renderApplications();
+}
+
+function renderLoans(){
+  const list=loans.filter(l=>loanFilter==='all'||getStatus(l)===loanFilter);
+  document.getElementById('loans-tbody').innerHTML=list.length===0
+    ?'<tr><td colspan="6" style="padding:24px;text-align:center;color:#888;">No loans found.</td></tr>'
+    :list.map(l=>{const b=borrowers.find(x=>x.id===l.borrowerId);const bal=getBalance(l);
+    return`<tr class="tbl-row"><td style="font-weight:500;">${b?b.first+' '+b.last:'?'}</td><td>${fmt(l.principal)}</td><td>${l.rate}% p.m.</td><td style="font-weight:600;color:${bal>0?'#791F1F':'#27500A'};">${fmtD(bal)}</td><td>${badge(getStatus(l))}</td><td>
+      <button onclick="viewLoan('${l.id}')" class="btn-sm">View</button>
+      <button onclick="openPaymentModal('${l.id}')" class="btn-sm">Pay</button>
+      <button onclick="printStatement('${l.id}')" class="btn-sm">Statement</button>
+      <button onclick="deleteLoan('${l.id}')" class="btn-sm danger">Del</button>
+    </td></tr>`;}).join('');
+}
+
+function renderBorrowers(){
+  document.getElementById('borrowers-tbody').innerHTML=borrowers.length===0
+    ?'<tr><td colspan="5" style="padding:24px;text-align:center;color:#888;">No borrowers yet.</td></tr>'
+    :borrowers.map(b=>{const bl=loans.filter(l=>l.borrowerId===b.id);const active=bl.filter(l=>getStatus(l)!=='completed').length;const total=bl.reduce((s,l)=>s+l.principal,0);
+    return`<tr class="tbl-row"><td style="font-weight:500;">${b.first} ${b.last}<div style="font-size:11px;font-weight:400;color:#888;">${b.idnum||''}</div></td><td>${b.phone||'—'}</td><td>${active>0?`<span class="badge badge-active">${active}</span>`:0}</td><td>${fmt(total)}</td><td>
+      <button onclick="printBorrowerStatement('${b.id}')" class="btn-sm">Statement</button>
+      <button onclick="deleteBorrower('${b.id}')" class="btn-sm danger">Delete</button>
+    </td></tr>`;}).join('');
+}
+
+function renderPayments(){
+  const sorted=[...payments].sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('payments-tbody').innerHTML=sorted.length===0
+    ?'<tr><td colspan="6" style="padding:24px;text-align:center;color:#888;">No payments recorded.</td></tr>'
+    :sorted.map(p=>{const l=loans.find(x=>x.id===p.loanId);const b=l?borrowers.find(x=>x.id===l.borrowerId):null;
+    return`<tr class="tbl-row"><td>${p.date}</td><td>${b?b.first+' '+b.last:'?'}</td><td style="font-weight:600;">${fmtD(p.amount)}</td><td>${fmtD(p.principal)}</td><td style="color:#27500A;font-weight:500;">${fmtD(p.interest)}</td><td style="color:#888;">${p.notes||'—'}</td></tr>`;}).join('');
+}
+
+function renderReports(){
+  const totalP=loans.reduce((s,l)=>s+l.principal,0),totalOut=loans.reduce((s,l)=>s+getBalance(l),0),totalInt=payments.reduce((s,p)=>s+p.interest,0);
+  document.getElementById('report-summary').innerHTML=drow('Total loans issued',loans.length)+drow('Total borrowers',borrowers.length)+drow('Principal deployed',fmt(totalP))+drow('Outstanding balance',fmt(totalOut),'color:#791F1F;font-weight:600;')+drow('Capital recovered',fmt(totalP-totalOut))+drow('Interest earned',fmt(totalInt),'color:#27500A;font-weight:600;');
+  const act=loans.filter(l=>getStatus(l)==='active').length,comp=loans.filter(l=>getStatus(l)==='completed').length,over=loans.filter(l=>getStatus(l)==='overdue').length;
+  if(sChart){sChart.destroy();sChart=null;}
+  if(loans.length>0){sChart=new Chart(document.getElementById('statusChart'),{type:'doughnut',data:{labels:['Active','Completed','Overdue'],datasets:[{data:[act,comp,over],backgroundColor:['#378ADD','#2d9e5f','#E24B4A'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:10,padding:8}}}}});}
+  else{document.getElementById('statusChart').parentElement.innerHTML='<div style="text-align:center;color:#888;padding:40px 0;font-size:13px;">No loan data yet.</div>';}
+  const topB=borrowers.map(b=>({b,bal:loans.filter(l=>l.borrowerId===b.id).reduce((s,l)=>s+getBalance(l),0)})).filter(x=>x.bal>0).sort((a,b)=>b.bal-a.bal).slice(0,5);
+  document.getElementById('report-borrowers').innerHTML=topB.length===0?'<div style="color:#888;font-size:13px;">No outstanding balances.</div>':topB.map(x=>drow(x.b.first+' '+x.b.last,fmt(x.bal),'color:#791F1F;font-weight:600;')).join('');
+  const months={};payments.forEach(p=>{const m=p.date.slice(0,7);months[m]=(months[m]||0)+p.interest;});const mk=Object.keys(months).sort().slice(-6);
+  if(iChart){iChart.destroy();iChart=null;}
+  if(mk.length>0){iChart=new Chart(document.getElementById('interestChart'),{type:'bar',data:{labels:mk,datasets:[{label:'Interest',data:mk.map(k=>Math.round(months[k])),backgroundColor:'#2d9e5f',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'R'+v.toLocaleString()},grid:{color:'#e8e8e4'}},x:{grid:{display:false}}}}});}
+  else{document.getElementById('interestChart').parentElement.innerHTML='<div style="text-align:center;color:#888;padding:40px 0;font-size:13px;">No payment data yet.</div>';}
+}
+
+function setFilter(f,btn){
+  loanFilter=f;
+  document.querySelectorAll('#lf-all,#lf-active,#lf-completed,#lf-overdue').forEach(el=>el.classList.remove('active'));
+  btn.classList.add('active');renderLoans();
+}
+
+function openLoanModal(){
+  const bOpts='<option value="">Select borrower...</option>'+borrowers.map(b=>`<option value="${b.id}">${b.first} ${b.last}</option>`).join('');
+  openModal(mhdr('New loan')+`<div id="loan-alert"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div style="grid-column:1/-1;">${selHtml('f-borrower','Borrower',bOpts)}</div>
+    ${fieldHtml('f-principal','Principal (R)','number','5000','min="1"')}
+    ${fieldHtml('f-rate','Interest rate (% / month)','number','3','step="0.1" min="0"')}
+    ${fieldHtml('f-term','Term (months)','number','12','min="1"')}
+    ${selHtml('f-reptype','Repayment type','<option value="equal">Equal installments</option><option value="interest-only">Interest only (balloon)</option><option value="flat">Flat rate</option>')}
+    ${fieldHtml('f-startdate','Start date','date','')}
+    <div style="grid-column:1/-1;">${fieldHtml('f-notes','Purpose / notes','text','Business capital...')}</div>
+  </div><div id="loan-preview" style="margin-top:12px;"></div>${mftr('closeModal()','saveLoan()','Create loan')}`);
+  document.getElementById('f-startdate').value=todayStr();
+  ['f-principal','f-rate','f-term','f-reptype'].forEach(id=>document.getElementById(id).addEventListener('input',previewLoan));
+}
+
+function previewLoan(){
+  const p=+document.getElementById('f-principal').value,r=+document.getElementById('f-rate').value,t=+document.getElementById('f-term').value,type=document.getElementById('f-reptype').value,el=document.getElementById('loan-preview');
+  if(!p||!r||!t){el.innerHTML='';return;}
+  const{monthly,total,totalInterest}=calcLoan(p,r,t,type);
+  el.innerHTML=`<div style="background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;padding:12px;">${drow('Monthly payment',fmtD(monthly),'font-weight:600;')}${drow('Total repayable',fmtD(total),'font-weight:600;')}${drow('Total interest',fmtD(totalInterest),'color:#27500A;font-weight:600;')}</div>`;
+}
+
+function saveLoan(){
+  const borrowerId=document.getElementById('f-borrower').value,principal=+document.getElementById('f-principal').value,rate=+document.getElementById('f-rate').value,term=+document.getElementById('f-term').value,reptype=document.getElementById('f-reptype').value,startDate=document.getElementById('f-startdate').value,notes=document.getElementById('f-notes').value;
+  if(!borrowerId||!principal||!rate||!term||!startDate){document.getElementById('loan-alert').innerHTML=alertBox('Please fill in all required fields.');return;}
+  loans.push({id:uid(),borrowerId,principal,rate,term,reptype,startDate,notes,createdAt:todayStr()});
+  persist();closeModal();renderDashboard();renderLoans();
+}
+
+function openBorrowerModal(){
+  openModal(mhdr('New borrower')+`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    ${fieldHtml('b-first','First name','text','John')}${fieldHtml('b-last','Last name','text','Doe')}
+    ${fieldHtml('b-phone','Phone','text','+27 82 123 4567')}${fieldHtml('b-idnum','ID number','text','National ID')}
+    <div style="grid-column:1/-1;">${fieldHtml('b-address','Address','text','Street, City')}</div>
+  </div>${mftr('closeModal()','saveBorrower()','Add borrower')}`);
+}
+function saveBorrower(){
+  const first=document.getElementById('b-first').value.trim(),last=document.getElementById('b-last').value.trim();
+  if(!first||!last)return;
+  borrowers.push({id:uid(),first,last,phone:document.getElementById('b-phone').value,idnum:document.getElementById('b-idnum').value,address:document.getElementById('b-address').value,createdAt:todayStr()});
+  persist();closeModal();renderBorrowers();
+}
+
+function openPaymentModal(loanId){
+  const active=loans.filter(l=>getStatus(l)!=='completed');
+  const lOpts='<option value="">Select loan...</option>'+active.map(l=>{const b=borrowers.find(x=>x.id===l.borrowerId);return`<option value="${l.id}">${b?b.first+' '+b.last:'?'} — ${fmt(l.principal)}</option>`;}).join('');
+  openModal(mhdr('Record payment')+`<div id="pay-alert"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div style="grid-column:1/-1;">${selHtml('p-loan','Loan',lOpts)}</div>
+    <div style="grid-column:1/-1;" id="p-info"></div>
+    ${fieldHtml('p-amount','Amount (R)','number','0','min="1"')}
+    ${fieldHtml('p-date','Date','date','')}
+    <div style="grid-column:1/-1;">${fieldHtml('p-notes','Notes','text','Cash, EFT, reference...')}</div>
+  </div>${mftr('closeModal()','savePayment()','Record payment')}`);
+  document.getElementById('p-date').value=todayStr();
+  if(loanId)document.getElementById('p-loan').value=loanId;
+  document.getElementById('p-loan').addEventListener('change',updatePayInfo);
+  if(loanId)updatePayInfo();
+}
+function updatePayInfo(){
+  const lid=document.getElementById('p-loan').value;if(!lid){document.getElementById('p-info').innerHTML='';return;}
+  const l=loans.find(x=>x.id===lid),bal=getBalance(l);const{monthly}=calcLoan(l.principal,l.rate,l.term,l.reptype);
+  document.getElementById('p-info').innerHTML=`<div style="background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;padding:10px;">${drow('Outstanding balance',fmtD(bal))}${drow('Suggested payment',fmtD(Math.min(monthly,bal)),'color:#185FA5;font-weight:600;')}</div>`;
+}
+function savePayment(){
+  const loanId=document.getElementById('p-loan').value,amount=+document.getElementById('p-amount').value,date=document.getElementById('p-date').value,notes=document.getElementById('p-notes').value;
+  if(!loanId||!amount||!date){document.getElementById('pay-alert').innerHTML=alertBox('Please fill in all required fields.');return;}
+  const l=loans.find(x=>x.id===loanId),interest=Math.min(l.principal*(l.rate/100),amount),principal=amount-interest;
+  payments.push({id:uid(),loanId,amount,date,notes,principal,interest});
+  persist();closeModal();renderDashboard();renderLoans();renderPayments();
+}
+
+function viewLoan(id){
+  const l=loans.find(x=>x.id===id),b=borrowers.find(x=>x.id===l.borrowerId);
+  const{monthly,total,totalInterest}=calcLoan(l.principal,l.rate,l.term,l.reptype);
+  const bal=getBalance(l),paid=total-bal,pct=total>0?Math.min(100,Math.round((paid/total)*100)):0;
+  const lp=payments.filter(p=>p.loanId===id).sort((a,b)=>a.date.localeCompare(b.date));
+  const typeLabel={equal:'Equal installments','interest-only':'Interest only (balloon)',flat:'Flat rate'};
+  openModal(mhdr(`${b?b.first+' '+b.last:'Loan'} — details`)+`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;margin-bottom:14px;">
+      <div>${drow('Principal',fmt(l.principal))}${drow('Rate',l.rate+'% p.m.')}${drow('Term',l.term+' months')}${drow('Type',typeLabel[l.reptype]||l.reptype)}${drow('Status',badge(getStatus(l)))}</div>
+      <div>${drow('Monthly payment',fmtD(monthly),'font-weight:600;')}${drow('Total repayable',fmtD(total))}${drow('Total interest',fmtD(totalInterest),'color:#27500A;')}${drow('Amount paid',fmtD(paid))}${drow('Outstanding',fmtD(bal),'color:#791F1F;font-weight:600;')}</div>
+    </div>
+    <div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:#888;">Repayment progress</span><span style="font-weight:600;">${pct}%</span></div><div style="height:7px;background:#e8e8e4;border-radius:4px;overflow:hidden;border:1px solid #d8d8d4;"><div style="height:100%;width:${pct}%;background:#378ADD;border-radius:4px;"></div></div></div>
+    ${l.notes?`<div style="font-size:12px;color:#888;margin-bottom:12px;padding:8px 10px;background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;">${l.notes}</div>`:''}
+    <div class="section-label">Payment history</div>
+    ${lp.length===0?'<div style="color:#888;font-size:13px;padding:10px 0;">No payments yet.</div>':`<table><thead class="tbl-head"><tr><th>Date</th><th>Amount</th><th>Principal</th><th>Interest</th><th>Notes</th></tr></thead><tbody>${lp.map(p=>`<tr class="tbl-row"><td>${p.date}</td><td style="font-weight:600;">${fmtD(p.amount)}</td><td>${fmtD(p.principal)}</td><td style="color:#27500A;">${fmtD(p.interest)}</td><td style="color:#888;">${p.notes||'—'}</td></tr>`).join('')}</tbody></table>`}
+    <div class="modal-ftr"><button onclick="closeModal()" class="btn-ghost">Close</button><button onclick="printStatement('${id}')" class="btn-ghost">&#128438; Print statement</button><button onclick="closeModal();openPaymentModal('${id}')" class="btn-primary">Record payment</button></div>`);
+}
+
+function buildStatementHTML(b,loansForBorrower){
+  const today=new Date().toLocaleDateString('en-ZA',{day:'2-digit',month:'long',year:'numeric'});
+  let loansHtml='';
+  loansForBorrower.forEach(l=>{
+    const{monthly,total,totalInterest}=calcLoan(l.principal,l.rate,l.term,l.reptype);
+    const bal=getBalance(l),paid=total-bal;
+    const lp=payments.filter(p=>p.loanId===l.id).sort((a,x)=>a.date.localeCompare(x.date));
+    const typeLabel={equal:'Equal installments','interest-only':'Interest only (balloon)',flat:'Flat rate'};
+    const st=getStatus(l);
+    const statusColor={active:'#185FA5',completed:'#27500A',overdue:'#791F1F'}[st];
+    loansHtml+=`<div style="margin-bottom:28px;border:1px solid #d8d8d4;border-radius:8px;overflow:hidden;">
+      <div style="background:#f7f7f5;padding:10px 14px;border-bottom:1px solid #d8d8d4;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-weight:700;font-size:14px;">Loan: ${fmt(l.principal)} — started ${fmtDate(l.startDate)}</span>
+        <span style="font-size:12px;font-weight:700;text-transform:uppercase;color:${statusColor}">${st}</span>
+      </div>
+      <div style="padding:12px 14px;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px;">
+          <tr><td style="padding:4px 0;color:#555;width:50%;">Rate</td><td style="padding:4px 0;font-weight:600;">${l.rate}% per month</td><td style="padding:4px 0;color:#555;width:50%;">Term</td><td style="padding:4px 0;font-weight:600;">${l.term} months</td></tr>
+          <tr><td style="padding:4px 0;color:#555;">Type</td><td style="padding:4px 0;font-weight:600;">${typeLabel[l.reptype]||l.reptype}</td><td style="padding:4px 0;color:#555;">Monthly payment</td><td style="padding:4px 0;font-weight:600;">${fmtD(monthly)}</td></tr>
+          <tr><td style="padding:4px 0;color:#555;">Total repayable</td><td style="padding:4px 0;font-weight:600;">${fmtD(total)}</td><td style="padding:4px 0;color:#555;">Total interest</td><td style="padding:4px 0;font-weight:600;color:#27500A;">${fmtD(totalInterest)}</td></tr>
+          <tr><td style="padding:4px 0;color:#555;">Amount paid</td><td style="padding:4px 0;font-weight:600;color:#185FA5;">${fmtD(paid)}</td><td style="padding:4px 0;color:#555;">Balance outstanding</td><td style="padding:4px 0;font-weight:700;color:${bal>0?'#791F1F':'#27500A'};">${fmtD(bal)}</td></tr>
+        </table>
+        ${l.notes?`<div style="font-size:11px;color:#888;margin-bottom:10px;padding:6px 8px;background:#f0f0ec;border-radius:4px;">Purpose: ${l.notes}</div>`:''}
+        ${lp.length>0?`<div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;padding-top:8px;border-top:1px solid #d8d8d4;">Payment history</div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead><tr style="background:#f7f7f5;"><th style="text-align:left;padding:5px 8px;border:1px solid #d8d8d4;">Date</th><th style="text-align:right;padding:5px 8px;border:1px solid #d8d8d4;">Amount</th><th style="text-align:right;padding:5px 8px;border:1px solid #d8d8d4;">Principal</th><th style="text-align:right;padding:5px 8px;border:1px solid #d8d8d4;">Interest</th><th style="text-align:left;padding:5px 8px;border:1px solid #d8d8d4;">Notes</th></tr></thead>
+            <tbody>${lp.map((p,i)=>`<tr style="background:${i%2===0?'#fff':'#fafafa'};"><td style="padding:5px 8px;border:1px solid #d8d8d4;">${p.date}</td><td style="text-align:right;padding:5px 8px;border:1px solid #d8d8d4;font-weight:600;">${fmtD(p.amount)}</td><td style="text-align:right;padding:5px 8px;border:1px solid #d8d8d4;">${fmtD(p.principal)}</td><td style="text-align:right;padding:5px 8px;border:1px solid #d8d8d4;color:#27500A;">${fmtD(p.interest)}</td><td style="padding:5px 8px;border:1px solid #d8d8d4;color:#888;">${p.notes||'—'}</td></tr>`).join('')}</tbody>
+          </table>`:'<div style="font-size:12px;color:#888;padding:6px 0;border-top:1px solid #d8d8d4;">No payments recorded yet.</div>'}
+      </div></div>`;
+  });
+  const totalBorrowed=loansForBorrower.reduce((s,l)=>s+l.principal,0),totalOutstanding=loansForBorrower.reduce((s,l)=>s+getBalance(l),0),totalPaid=payments.filter(p=>loansForBorrower.find(l=>l.id===p.loanId)).reduce((s,p)=>s+p.amount,0),totalIntPaid=payments.filter(p=>loansForBorrower.find(l=>l.id===p.loanId)).reduce((s,p)=>s+p.interest,0);
+  return`<div style="font-family:system-ui,sans-serif;font-size:13px;color:#000;max-width:720px;margin:0 auto;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #1a1a1a;">
+      <div><div style="font-size:22px;font-weight:700;color:#185FA5;">LendTrack</div><div style="font-size:11px;color:#888;margin-top:2px;">Lending management system</div></div>
+      <div style="text-align:right;"><div style="font-size:18px;font-weight:700;">Account Statement</div><div style="font-size:12px;color:#888;margin-top:3px;">Generated: ${today}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div style="border:1px solid #d8d8d4;border-radius:6px;padding:12px;">
+        <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Borrower details</div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:4px;">${b.first} ${b.last}</div>
+        ${b.idnum?`<div style="font-size:12px;color:#555;">ID: ${b.idnum}</div>`:''}
+        ${b.phone?`<div style="font-size:12px;color:#555;">Phone: ${b.phone}</div>`:''}
+        ${b.email?`<div style="font-size:12px;color:#555;">Email: ${b.email}</div>`:''}
+        ${b.address?`<div style="font-size:12px;color:#555;">Address: ${b.address}</div>`:''}
+      </div>
+      <div style="border:1px solid #d8d8d4;border-radius:6px;padding:12px;">
+        <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Account summary</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <tr><td style="padding:3px 0;color:#555;">Total loans</td><td style="text-align:right;font-weight:600;">${loansForBorrower.length}</td></tr>
+          <tr><td style="padding:3px 0;color:#555;">Total borrowed</td><td style="text-align:right;font-weight:600;">${fmtD(totalBorrowed)}</td></tr>
+          <tr><td style="padding:3px 0;color:#555;">Total paid</td><td style="text-align:right;font-weight:600;color:#185FA5;">${fmtD(totalPaid)}</td></tr>
+          <tr><td style="padding:3px 0;color:#555;">Interest paid</td><td style="text-align:right;font-weight:600;color:#27500A;">${fmtD(totalIntPaid)}</td></tr>
+          <tr style="border-top:1px solid #d8d8d4;"><td style="padding:5px 0 2px;font-weight:700;">Outstanding balance</td><td style="text-align:right;font-weight:700;color:${totalOutstanding>0?'#791F1F':'#27500A'};padding-top:5px;">${fmtD(totalOutstanding)}</td></tr>
+        </table>
+      </div>
+    </div>
+    <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#555;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #d8d8d4;">Loan details</div>
+    ${loansHtml}
+    <div style="margin-top:24px;padding-top:14px;border-top:1px solid #d8d8d4;text-align:center;font-size:11px;color:#aaa;">Computer-generated statement. For queries, contact your lender.</div>
+  </div>`;
+}
+
+function printBorrowerStatement(bid){
+  const b=borrowers.find(x=>x.id===bid);if(!b)return;
+  const lf=loans.filter(l=>l.borrowerId===bid);if(lf.length===0){alert('This borrower has no loans yet.');return;}
+  const pw=window.open('','_blank','width=820,height=700');
+  pw.document.write(`<!DOCTYPE html><html><head><title>Statement - ${b.first} ${b.last}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;padding:32px;background:#fff;color:#000}</style></head><body>${buildStatementHTML(b,lf)}<script>window.onload=function(){window.print();}<\/script></body></html>`);
+  pw.document.close();
+}
+function printStatement(loanId){
+  const l=loans.find(x=>x.id===loanId);if(!l)return;
+  const b=borrowers.find(x=>x.id===l.borrowerId);if(!b)return;
+  const pw=window.open('','_blank','width=820,height=700');
+  pw.document.write(`<!DOCTYPE html><html><head><title>Statement - ${b.first} ${b.last}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;padding:32px;background:#fff;color:#000}</style></head><body>${buildStatementHTML(b,[l])}<script>window.onload=function(){window.print();}<\/script></body></html>`);
+  pw.document.close();
+}
+
+function deleteLoan(id){if(!confirm('Delete this loan and its payments?'))return;loans=loans.filter(l=>l.id!==id);payments=payments.filter(p=>p.loanId!==id);persist();renderDashboard();renderLoans();}
+function deleteBorrower(id){if(!confirm('Delete this borrower?'))return;borrowers=borrowers.filter(b=>b.id!==id);persist();renderBorrowers();}
+
+function persist(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify({loans,borrowers,payments,applications}));}catch(e){}
+}
+function load(silent=false){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(raw){const d=JSON.parse(raw);loans=d.loans||[];borrowers=d.borrowers||[];payments=d.payments||[];applications=d.applications||[];}
+  }catch(e){}
+  if(!silent)renderDashboard();
+  else updateAppBadge();
+}
+load();
+</script>
+</body>
+</html>
