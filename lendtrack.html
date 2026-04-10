@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LendTrack — Loan Application</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:#1a1a1a;background:#f0f0ec;min-height:100vh;padding:32px 16px}
+.wrap{max-width:580px;margin:0 auto}
+.logo{text-align:center;margin-bottom:28px}
+.logo-name{font-size:24px;font-weight:700;color:#185FA5;letter-spacing:-0.5px}
+.logo-sub{font-size:12px;color:#888;margin-top:3px}
+.card{background:#fff;border:1px solid #d8d8d4;border-radius:12px;padding:28px 28px 24px}
+.section-title{font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #ebebeb}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px}
+.full{grid-column:1/-1}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:600;color:#444}
+.field input,.field select,.field textarea{padding:10px 12px;border:1px solid #c8c8c4;border-radius:8px;font-size:14px;background:#fff;color:#1a1a1a;width:100%;font-family:inherit;transition:border-color 0.15s,box-shadow 0.15s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#378ADD;box-shadow:0 0 0 3px rgba(55,138,221,0.12)}
+.field textarea{resize:vertical;min-height:72px}
+.required{color:#E24B4A}
+.btn{display:block;width:100%;padding:13px;background:#378ADD;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:15px;font-weight:600;font-family:inherit;margin-top:4px;transition:background 0.15s;text-align:center}
+.btn:hover{background:#2670b8}
+.btn:active{background:#1e5a9c}
+.btn:disabled{background:#a0c4e8;cursor:not-allowed}
+.alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;line-height:1.5}
+.alert.err{background:#fcebeb;border:1px solid #F09595;color:#791F1F}
+.alert.ok{background:#eaf3de;border:1px solid #97C459;color:#27500A}
+.success-box{text-align:center;padding:48px 20px}
+.success-icon{width:64px;height:64px;background:#eaf3de;border:2px solid #97C459;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px;color:#27500A;line-height:1}
+.success-title{font-size:20px;font-weight:700;margin-bottom:10px}
+.success-sub{font-size:14px;color:#666;line-height:1.6;max-width:360px;margin:0 auto}
+.footer{text-align:center;margin-top:24px;font-size:11px;color:#bbb}
+.hint{font-size:11px;color:#aaa;margin-top:8px;text-align:center}
+.setup-box{background:#fff3cd;border:1px solid #EF9F27;border-radius:10px;padding:16px 18px;margin-bottom:20px;font-size:13px;color:#633806;line-height:1.7}
+.setup-box strong{color:#412402;display:block;margin-bottom:4px;font-size:14px}
+.setup-box code{background:#faeeda;padding:2px 7px;border-radius:4px;font-size:12px;font-family:monospace;color:#412402}
+.setup-box ol{margin-left:18px;margin-top:8px}
+.setup-box ol li{margin-bottom:4px}
+@media(max-width:500px){
+  .grid{grid-template-columns:1fr}
+  .full{grid-column:1}
+  .card{padding:20px 16px}
+  body{padding:20px 12px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="logo">
+    <div class="logo-name">LendTrack</div>
+    <div class="logo-sub">Loan application form</div>
+  </div>
+
+  <div id="setup-box" class="setup-box" style="display:none;">
+    <strong>&#9888; One-time setup needed</strong>
+    This form needs a free Formspree account to send you emails. Here is how to set it up:
+    <ol>
+      <li>Go to <strong>formspree.io</strong> and sign up free</li>
+      <li>Click <strong>New Form</strong>, give it a name like "LendTrack Applications"</li>
+      <li>Copy your form ID — it looks like <code>xabc1234</code> (the part after /f/ in the endpoint URL)</li>
+      <li>Open this HTML file in a text editor, find <code>YOUR_FORM_ID</code> and replace it with your ID</li>
+      <li>Save and re-open — done! Every submission emails you instantly.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <div id="success-view" style="display:none;">
+      <div class="success-box">
+        <div class="success-icon">&#10003;</div>
+        <div class="success-title">Application submitted!</div>
+        <div class="success-sub">Thank you <strong id="success-name"></strong>. Your loan application has been received. The lender will review it and contact you on the phone number or email you provided.</div>
+      </div>
+    </div>
+
+    <div id="form-view">
+      <div id="form-alert"></div>
+
+      <div class="section-title">Personal information</div>
+      <div class="grid">
+        <div class="field">
+          <label>First name <span class="required">*</span></label>
+          <input id="f-first" type="text" placeholder="John" autocomplete="given-name">
+        </div>
+        <div class="field">
+          <label>Last name <span class="required">*</span></label>
+          <input id="f-last" type="text" placeholder="Doe" autocomplete="family-name">
+        </div>
+        <div class="field">
+          <label>Phone number <span class="required">*</span></label>
+          <input id="f-phone" type="tel" placeholder="+27 82 123 4567" autocomplete="tel">
+        </div>
+        <div class="field">
+          <label>Email address <span class="required">*</span></label>
+          <input id="f-email" type="email" placeholder="john@email.com" autocomplete="email">
+        </div>
+        <div class="field full">
+          <label>ID number / Passport</label>
+          <input id="f-idnum" type="text" placeholder="National ID or passport number">
+        </div>
+        <div class="field full">
+          <label>Residential address</label>
+          <input id="f-address" type="text" placeholder="Street, City, Province" autocomplete="street-address">
+        </div>
+      </div>
+
+      <div class="section-title">Employment &amp; income</div>
+      <div class="grid">
+        <div class="field">
+          <label>Employment status</label>
+          <select id="f-employment">
+            <option value="">Select...</option>
+            <option>Employed (full-time)</option>
+            <option>Employed (part-time)</option>
+            <option>Self-employed</option>
+            <option>Business owner</option>
+            <option>Unemployed</option>
+            <option>Retired</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Gross monthly income (R)</label>
+          <input id="f-income" type="number" placeholder="15000" min="0">
+        </div>
+        <div class="field full">
+          <label>Employer / Business name</label>
+          <input id="f-employer" type="text" placeholder="Company or business name">
+        </div>
+      </div>
+
+      <div class="section-title">Loan request</div>
+      <div class="grid">
+        <div class="field">
+          <label>Loan amount (R) <span class="required">*</span></label>
+          <input id="f-amount" type="number" placeholder="5000" min="1">
+        </div>
+        <div class="field">
+          <label>Preferred term (months) <span class="required">*</span></label>
+          <input id="f-term" type="number" placeholder="12" min="1" max="120">
+        </div>
+        <div class="field full">
+          <label>Purpose of loan <span class="required">*</span></label>
+          <input id="f-purpose" type="text" placeholder="e.g. Business capital, home improvement, education, medical...">
+        </div>
+        <div class="field full">
+          <label>Additional notes</label>
+          <textarea id="f-notes" placeholder="Any other information you would like the lender to know..."></textarea>
+        </div>
+      </div>
+
+      <div id="submit-alert"></div>
+      <button class="btn" id="submit-btn" onclick="submitForm()">Submit application</button>
+      <p class="hint">Fields marked <span style="color:#E24B4A;">*</span> are required &nbsp;&middot;&nbsp; Your information is kept confidential</p>
+    </div>
+  </div>
+
+  <div class="footer">Powered by LendTrack &mdash; Lending management system</div>
+</div>
+
+<script>
+const FORMSPREE_ID = 'xwvwdnzr';
+
+function g(id){return document.getElementById(id);}
+function val(id){return g(id).value.trim();}
+function numVal(id){return +g(id).value||0;}
+
+function markErr(id){
+  const el=g(id);
+  el.style.borderColor='#E24B4A';
+  el.style.background='#fff8f8';
+}
+function clearErr(id){
+  const el=g(id);if(!el)return;
+  el.style.borderColor='';
+  el.style.background='';
+}
+
+window.addEventListener('DOMContentLoaded',function(){
+  if(FORMSPREE_ID==='YOUR_FORM_ID'){
+    g('setup-box').style.display='block';
+  }
+  ['f-first','f-last','f-phone','f-email','f-amount','f-term','f-purpose'].forEach(id=>{
+    g(id).addEventListener('input',()=>clearErr(id));
+  });
+});
+
+async function submitForm(){
+  g('form-alert').innerHTML='';
+  g('submit-alert').innerHTML='';
+
+  const first=val('f-first'),last=val('f-last'),phone=val('f-phone'),
+        email=val('f-email'),amount=numVal('f-amount'),
+        term=numVal('f-term'),purpose=val('f-purpose');
+
+  let hasErr=false;
+  [['f-first',first],['f-last',last],['f-phone',phone],
+   ['f-email',email],['f-amount',amount],['f-term',term],['f-purpose',purpose]
+  ].forEach(([id,v])=>{if(!v){markErr(id);hasErr=true;}});
+
+  if(hasErr){
+    g('form-alert').innerHTML='<div class="alert err">Please fill in all required fields marked with *</div>';
+    window.scrollTo({top:0,behavior:'smooth'});
+    return;
+  }
+
+  if(!email.includes('@')||!email.includes('.')){
+    markErr('f-email');
+    g('form-alert').innerHTML='<div class="alert err">Please enter a valid email address.</div>';
+    return;
+  }
+
+  if(FORMSPREE_ID==='YOUR_FORM_ID'){
+    g('submit-alert').innerHTML='<div class="alert err"><strong>Setup needed:</strong> The lender has not yet configured this form. Please contact them directly.</div>';
+    return;
+  }
+
+  const btn=g('submit-btn');
+  btn.disabled=true;
+  btn.textContent='Submitting...';
+
+  const payload={
+    '_subject': 'New loan application — '+first+' '+last,
+    'Full Name': first+' '+last,
+    'Phone': phone,
+    'Email': email,
+    'ID Number': val('f-idnum')||'Not provided',
+    'Address': val('f-address')||'Not provided',
+    'Employment Status': val('f-employment')||'Not provided',
+    'Monthly Income (R)': numVal('f-income')?'R'+numVal('f-income').toLocaleString():'Not provided',
+    'Employer': val('f-employer')||'Not provided',
+    'Loan Amount Requested': 'R'+amount.toLocaleString(),
+    'Preferred Term': term+' months',
+    'Purpose of Loan': purpose,
+    'Additional Notes': val('f-notes')||'None',
+    'Submitted At': new Date().toLocaleString('en-ZA',{dateStyle:'full',timeStyle:'short'})
+  };
+
+  try{
+    const res=await fetch('https://formspree.io/f/'+FORMSPREE_ID,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    const data=await res.json();
+
+    if(res.ok){
+      g('success-name').textContent=first;
+      g('form-view').style.display='none';
+      g('success-view').style.display='block';
+      window.scrollTo({top:0,behavior:'smooth'});
+    } else {
+      const msg=data.errors?data.errors.map(e=>e.message).join(', '):'Submission failed. Please try again.';
+      g('submit-alert').innerHTML='<div class="alert err">'+msg+'</div>';
+      btn.disabled=false;
+      btn.textContent='Submit application';
+    }
+  }catch(err){
+    g('submit-alert').innerHTML='<div class="alert err">Network error — please check your internet connection and try again.</div>';
+    btn.disabled=false;
+    btn.textContent='Submit application';
+  }
+}
+</script>
+</body>
+</html>
