@@ -203,7 +203,7 @@ table{border-collapse:collapse;width:100%}
         <p style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6;">Paste your Google Apps Script Web App URL below. This allows applications submitted from any device to appear automatically in your dashboard.</p>
         <div class="field" style="margin-bottom:12px;">
           <label>Google Script URL</label>
-          <input id="cfg-script-url" type="url" placeholder="https://script.google.com/macros/s/AKfycbzXb7q7oEUmf-Dgqw9a-_buYvoAAzXkUOiyQvvZC5MC7vNzkm91jht1sCxwa12ckIFWcA/exec">
+          <input id="cfg-script-url" type="url" placeholder="https://script.google.com/macros/s/.../exec">
         </div>
         <button onclick="saveSettings()" class="btn-primary" style="width:auto;">Save settings</button>
         <div id="settings-msg" style="margin-top:10px;font-size:12px;"></div>
@@ -245,7 +245,7 @@ table{border-collapse:collapse;width:100%}
 // ---------------------------------------------------------------
 // CONFIG — set your Google Script URL here OR via Settings page
 // ---------------------------------------------------------------
-let GOOGLE_SCRIPT_URL = '';
+let GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzXb7q7oEUmf-Dgqw9a-_buYvoAAzXkUOiyQvvZC5MC7vNzkm91jht1sCxwa12ckIFWcA/exec';
 // ---------------------------------------------------------------
 
 const STORAGE_KEY = 'lendtrack5';
