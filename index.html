@@ -82,7 +82,7 @@ table{border-collapse:collapse;width:100%}
     <button onclick="nav('borrowers')" id="nb-borrowers" class="nav-btn">&#9711; Borrowers</button>
     <button onclick="nav('payments')" id="nb-payments" class="nav-btn">&#10003; Payments</button>
     <button onclick="nav('reports')" id="nb-reports" class="nav-btn">&#9650; Reports</button>
-    <button onclick="nav('settings')" id="nb-settings" class="nav-btn">&#9881; Settings</button>
+    <button onclick="nav('portal')" id="nb-portal" class="nav-btn">&#128279; Apply portal</button>
   </div>
   <div style="padding:12px 14px;border-top:1px solid #d8d8d4;">
     <button onclick="refreshApps()" id="refresh-btn" style="width:100%;padding:6px;background:#f7f7f5;border:1px solid #d8d8d4;border-radius:6px;cursor:pointer;font-size:12px;color:#555;font-family:inherit;">&#8635; Refresh applications</button>
@@ -95,7 +95,7 @@ table{border-collapse:collapse;width:100%}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
       <div style="font-size:18px;font-weight:600;">Dashboard</div>
       <div style="display:flex;gap:8px;">
-        <button onclick="nav('settings')" class="btn-ghost">&#9881; Settings</button>
+        <button onclick="nav('portal')" class="btn-ghost">&#128279; Apply portal</button>
         <button onclick="openLoanModal()" class="btn-primary">+ New loan</button>
       </div>
     </div>
@@ -193,39 +193,42 @@ table{border-collapse:collapse;width:100%}
     </div>
   </div>
 
-  <!-- SETTINGS PAGE -->
-  <div id="page-settings" class="page">
-    <div style="margin-bottom:20px;font-size:18px;font-weight:600;">Settings</div>
-    <div style="max-width:600px;display:flex;flex-direction:column;gap:16px;">
+  <!-- APPLY PORTAL PAGE -->
+  <div id="page-portal" class="page">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-size:18px;font-weight:600;">Apply portal</div>
+    </div>
+    <div style="max-width:540px;display:flex;flex-direction:column;gap:16px;">
 
-      <div class="card-pad">
-        <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #d8d8d4;">Google Sheets integration</div>
-        <p style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6;">Paste your Google Apps Script Web App URL below. This allows applications submitted from any device to appear automatically in your dashboard.</p>
-        <div class="field" style="margin-bottom:12px;">
-          <label>Google Script URL</label>
-          <input id="cfg-script-url" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+      <div class="card-pad" style="text-align:center;padding:32px 24px;">
+        <div style="font-size:40px;margin-bottom:14px;">&#128279;</div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Borrower application link</div>
+        <div style="font-size:12px;color:#888;margin-bottom:20px;line-height:1.6;">Share this link with anyone who wants to apply for a loan. They can open it on any phone or browser and submit their application directly.</div>
+        <div style="background:#f0f0ec;border:1px solid #d8d8d4;border-radius:8px;padding:12px 16px;font-size:13px;font-weight:600;color:#185FA5;word-break:break-all;margin-bottom:16px;cursor:pointer;" onclick="copyLink()" id="portal-url">https://incredible-lending.vercel.app/lendtrack_apply.html</div>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+          <button onclick="copyLink()" class="btn-primary" id="copy-btn">&#128203; Copy link</button>
+          <a href="https://wa.me/?text=Apply%20for%20a%20loan%20here%3A%20https%3A%2F%2Fincredible-lending.vercel.app%2Flendtrack_apply.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#25D366;color:#fff;border-radius:8px;text-decoration:none;font-size:13px;font-weight:500;">&#128232; Share on WhatsApp</a>
+          <a href="https://incredible-lending.vercel.app/lendtrack_apply.html" target="_blank" class="btn-ghost">&#128065; Preview form</a>
         </div>
-        <button onclick="saveSettings()" class="btn-primary" style="width:auto;">Save settings</button>
-        <div id="settings-msg" style="margin-top:10px;font-size:12px;"></div>
+        <div id="copy-msg" style="margin-top:12px;font-size:12px;color:#27500A;display:none;">&#10003; Link copied to clipboard!</div>
       </div>
 
       <div class="card-pad" style="background:#f7f7f5;">
-        <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #d8d8d4;">&#128221; How to set up Google Sheets (one time)</div>
-        <div style="font-size:12px;color:#555;line-height:1.9;">
-          <b>Step 1.</b> Go to <a href="https://sheets.google.com" target="_blank" style="color:#378ADD;">sheets.google.com</a> and create a new spreadsheet. Name it <em>LendTrack Applications</em>.<br>
-          <b>Step 2.</b> Inside the spreadsheet, click <b>Extensions → Apps Script</b>.<br>
-          <b>Step 3.</b> Delete all existing code and paste the script provided in your README or below.<br>
-          <b>Step 4.</b> Click <b>Deploy → New deployment</b>. Choose type: <b>Web app</b>.<br>
-          <b>Step 5.</b> Set <b>Execute as: Me</b> and <b>Who has access: Anyone</b>. Click Deploy.<br>
-          <b>Step 6.</b> Copy the Web App URL and paste it above, then click Save.<br>
-          <b>Step 7.</b> Paste the same URL into <code>GOOGLE_SCRIPT_URL</code> in <b>lendtrack_apply.html</b> and redeploy to Vercel.
+        <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px;">How it works</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;font-size:13px;">
+            <span class="step-num">1</span><span>Send the link to your borrower via WhatsApp, SMS, or email.</span>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;font-size:13px;">
+            <span class="step-num">2</span><span>They open it in any browser, fill in the form, and click Submit.</span>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;font-size:13px;">
+            <span class="step-num">3</span><span>You receive an email notification and the application appears in your <b>Applications</b> tab after clicking Refresh.</span>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;font-size:13px;">
+            <span class="step-num">4</span><span>Review and approve or reject — approving automatically creates the loan.</span>
+          </div>
         </div>
-      </div>
-
-      <div class="card-pad" style="background:#f0f0ec;border:1px solid #d8d8d4;">
-        <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px;">&#128196; Apps Script code to copy</div>
-        <pre id="script-code" style="font-size:11px;background:#1a1a1a;color:#d4f5e2;padding:14px;border-radius:8px;overflow-x:auto;line-height:1.7;white-space:pre-wrap;"></pre>
-        <button onclick="copyScript()" class="btn-ghost" style="margin-top:10px;font-size:12px;">&#128203; Copy script</button>
       </div>
 
     </div>
@@ -327,16 +330,14 @@ function loadConfig(){
     if(cfg.scriptUrl) GOOGLE_SCRIPT_URL=cfg.scriptUrl;
   }catch(e){}
 }
-function saveSettings(){
-  const url=document.getElementById('cfg-script-url').value.trim();
-  if(!url){document.getElementById('settings-msg').innerHTML='<span style="color:#791F1F;">Please enter a URL.</span>';return;}
-  GOOGLE_SCRIPT_URL=url;
-  try{localStorage.setItem(CFG_KEY,JSON.stringify({scriptUrl:url}));}catch(e){}
-  document.getElementById('settings-msg').innerHTML='<span style="color:#27500A;">&#10003; Saved! Applications will now sync from Google Sheets.</span>';
-}
-function copyScript(){
-  navigator.clipboard.writeText(APPS_SCRIPT_CODE).then(()=>{
-    const btn=event.target;btn.textContent='&#10003; Copied!';setTimeout(()=>{btn.innerHTML='&#128203; Copy script';},2000);
+function copyLink(){
+  const url='https://incredible-lending.vercel.app/lendtrack_apply.html';
+  navigator.clipboard.writeText(url).then(()=>{
+    const msg=document.getElementById('copy-msg');
+    const btn=document.getElementById('copy-btn');
+    msg.style.display='block';
+    btn.textContent='&#10003; Copied!';
+    setTimeout(()=>{msg.style.display='none';btn.innerHTML='&#128203; Copy link';},3000);
   });
 }
 
@@ -376,13 +377,12 @@ function nav(page){
   document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
   const pe=document.getElementById('page-'+page);if(pe)pe.classList.add('active');
   const nb=document.getElementById('nb-'+page);if(nb)nb.classList.add('active');
-  const fns={dashboard:renderDashboard,applications:renderApplications,loans:renderLoans,borrowers:renderBorrowers,payments:renderPayments,reports:renderReports,settings:renderSettings};
+  const fns={dashboard:renderDashboard,applications:renderApplications,loans:renderLoans,borrowers:renderBorrowers,payments:renderPayments,reports:renderReports,portal:renderPortal};
   if(fns[page])fns[page]();
 }
 
-function renderSettings(){
-  document.getElementById('cfg-script-url').value=GOOGLE_SCRIPT_URL||'';
-  document.getElementById('script-code').textContent=APPS_SCRIPT_CODE;
+function renderPortal(){
+  // nothing to load dynamically
 }
 
 function openModal(html){document.getElementById('modal-content').innerHTML=html;document.getElementById('modal-wrap').classList.add('open');}
