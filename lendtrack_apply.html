@@ -147,7 +147,7 @@ body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:#1a1a1a
 // YOUR CONFIGURATION — fill in both values below
 // ---------------------------------------------------------------
 const FORMSPREE_ID = 'xwvwdnzr';
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzXb7q7oEUmf-Dgqw9a-_buYvoAAzXkUOiyQvvZC5MC7vNzkm91jht1sCxwa12ckIFWcA/exec';
+const GOOGLE_SCRIPT_URL = 'YOUR_GOOGLE_SCRIPT_URL';
 // ---------------------------------------------------------------
 
 function g(id){return document.getElementById(id);}
@@ -236,6 +236,7 @@ async function submitForm(){
     const [sheetsRes, formspreeRes] = await Promise.allSettled([
       fetch(GOOGLE_SCRIPT_URL, {
         method: 'POST',
+        redirect: 'follow',
         body: JSON.stringify(appData)
       }),
       fetch('https://formspree.io/f/'+FORMSPREE_ID, {

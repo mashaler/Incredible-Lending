@@ -415,7 +415,7 @@ function updateAppBadge(){
 async function fetchFromSheets(){
   if(!GOOGLE_SCRIPT_URL) return false;
   try{
-    const res = await fetch(GOOGLE_SCRIPT_URL, {method:'GET'});
+    const res = await fetch(GOOGLE_SCRIPT_URL, {method:'GET', redirect:'follow'});
     const remoteApps = await res.json();
     if(!Array.isArray(remoteApps)) return false;
 
@@ -487,6 +487,7 @@ async function updateSheetStatus(id, status){
   try{
     await fetch(GOOGLE_SCRIPT_URL, {
       method: 'POST',
+      redirect: 'follow',
       body: JSON.stringify({_action:'updateStatus', id, status})
     });
   }catch(e){}
