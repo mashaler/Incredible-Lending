@@ -34,11 +34,6 @@ body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:#1a1a1a
 .success-sub{font-size:14px;color:#666;line-height:1.6;max-width:360px;margin:0 auto}
 .footer{text-align:center;margin-top:24px;font-size:11px;color:#bbb}
 .hint{font-size:11px;color:#aaa;margin-top:8px;text-align:center}
-.setup-box{background:#fff3cd;border:1px solid #EF9F27;border-radius:10px;padding:16px 18px;margin-bottom:20px;font-size:13px;color:#633806;line-height:1.7}
-.setup-box strong{color:#412402;display:block;margin-bottom:4px;font-size:14px}
-.setup-box code{background:#faeeda;padding:2px 7px;border-radius:4px;font-size:12px;font-family:monospace;color:#412402}
-.setup-box ol{margin-left:18px;margin-top:8px}
-.setup-box ol li{margin-bottom:4px}
 @media(max-width:500px){
   .grid{grid-template-columns:1fr}
   .full{grid-column:1}
@@ -49,22 +44,9 @@ body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:#1a1a1a
 </head>
 <body>
 <div class="wrap">
-
   <div class="logo">
     <div class="logo-name">LendTrack</div>
     <div class="logo-sub">Loan application form</div>
-  </div>
-
-  <div id="setup-box" class="setup-box" style="display:none;">
-    <strong>&#9888; One-time setup needed</strong>
-    This form needs a free Formspree account to send you emails. Here is how to set it up:
-    <ol>
-      <li>Go to <strong>formspree.io</strong> and sign up free</li>
-      <li>Click <strong>New Form</strong>, give it a name like "LendTrack Applications"</li>
-      <li>Copy your form ID — it looks like <code>xabc1234</code> (the part after /f/ in the endpoint URL)</li>
-      <li>Open this HTML file in a text editor, find <code>YOUR_FORM_ID</code> and replace it with your ID</li>
-      <li>Save and re-open — done! Every submission emails you instantly.</li>
-    </ol>
   </div>
 
   <div class="card">
@@ -161,27 +143,22 @@ body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:#1a1a1a
 </div>
 
 <script>
+// ---------------------------------------------------------------
+// YOUR CONFIGURATION — fill in both values below
+// ---------------------------------------------------------------
 const FORMSPREE_ID = 'xwvwdnzr';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzXb7q7oEUmf-Dgqw9a-_buYvoAAzXkUOiyQvvZC5MC7vNzkm91jht1sCxwa12ckIFWcA/exec';
+// ---------------------------------------------------------------
 
 function g(id){return document.getElementById(id);}
 function val(id){return g(id).value.trim();}
 function numVal(id){return +g(id).value||0;}
 
-function markErr(id){
-  const el=g(id);
-  el.style.borderColor='#E24B4A';
-  el.style.background='#fff8f8';
-}
-function clearErr(id){
-  const el=g(id);if(!el)return;
-  el.style.borderColor='';
-  el.style.background='';
-}
+function markErr(id){const el=g(id);el.style.borderColor='#E24B4A';el.style.background='#fff8f8';}
+function clearErr(id){const el=g(id);if(!el)return;el.style.borderColor='';el.style.background='';}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 
 window.addEventListener('DOMContentLoaded',function(){
-  if(FORMSPREE_ID==='YOUR_FORM_ID'){
-    g('setup-box').style.display='block';
-  }
   ['f-first','f-last','f-phone','f-email','f-amount','f-term','f-purpose'].forEach(id=>{
     g(id).addEventListener('input',()=>clearErr(id));
   });
@@ -212,8 +189,8 @@ async function submitForm(){
     return;
   }
 
-  if(FORMSPREE_ID==='YOUR_FORM_ID'){
-    g('submit-alert').innerHTML='<div class="alert err"><strong>Setup needed:</strong> The lender has not yet configured this form. Please contact them directly.</div>';
+  if(GOOGLE_SCRIPT_URL==='YOUR_GOOGLE_SCRIPT_URL'){
+    g('submit-alert').innerHTML='<div class="alert err"><strong>Setup needed:</strong> This form has not been fully configured yet. Please contact the lender directly.</div>';
     return;
   }
 
@@ -221,43 +198,68 @@ async function submitForm(){
   btn.disabled=true;
   btn.textContent='Submitting...';
 
-  const payload={
+  // Build application object for Google Sheets
+  const appData = {
+    id: uid(),
+    first, last, phone, email,
+    idnum: val('f-idnum') || '',
+    address: val('f-address') || '',
+    employment: val('f-employment') || '',
+    income: numVal('f-income') || 0,
+    employer: val('f-employer') || '',
+    amount, term, purpose,
+    notes: val('f-notes') || '',
+    status: 'pending',
+    submittedAt: new Date().toLocaleString('en-ZA',{dateStyle:'full',timeStyle:'short'})
+  };
+
+  // Build email payload for Formspree
+  const emailPayload = {
     '_subject': 'New loan application — '+first+' '+last,
     'Full Name': first+' '+last,
     'Phone': phone,
     'Email': email,
-    'ID Number': val('f-idnum')||'Not provided',
-    'Address': val('f-address')||'Not provided',
-    'Employment Status': val('f-employment')||'Not provided',
-    'Monthly Income (R)': numVal('f-income')?'R'+numVal('f-income').toLocaleString():'Not provided',
-    'Employer': val('f-employer')||'Not provided',
+    'ID Number': appData.idnum||'Not provided',
+    'Address': appData.address||'Not provided',
+    'Employment Status': appData.employment||'Not provided',
+    'Monthly Income (R)': appData.income?'R'+appData.income.toLocaleString():'Not provided',
+    'Employer': appData.employer||'Not provided',
     'Loan Amount Requested': 'R'+amount.toLocaleString(),
     'Preferred Term': term+' months',
     'Purpose of Loan': purpose,
-    'Additional Notes': val('f-notes')||'None',
-    'Submitted At': new Date().toLocaleString('en-ZA',{dateStyle:'full',timeStyle:'short'})
+    'Additional Notes': appData.notes||'None',
+    'Submitted At': appData.submittedAt
   };
 
-  try{
-    const res=await fetch('https://formspree.io/f/'+FORMSPREE_ID,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body:JSON.stringify(payload)
-    });
-    const data=await res.json();
+  try {
+    // Send to both in parallel
+    const [sheetsRes, formspreeRes] = await Promise.allSettled([
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(appData)
+      }),
+      fetch('https://formspree.io/f/'+FORMSPREE_ID, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','Accept':'application/json'},
+        body: JSON.stringify(emailPayload)
+      })
+    ]);
 
-    if(res.ok){
-      g('success-name').textContent=first;
-      g('form-view').style.display='none';
-      g('success-view').style.display='block';
+    const sheetsOk = sheetsRes.status === 'fulfilled';
+    const formspreeOk = formspreeRes.status === 'fulfilled' && formspreeRes.value.ok;
+
+    if(sheetsOk || formspreeOk){
+      // At least one succeeded — show success
+      g('success-name').textContent = first;
+      g('form-view').style.display = 'none';
+      g('success-view').style.display = 'block';
       window.scrollTo({top:0,behavior:'smooth'});
     } else {
-      const msg=data.errors?data.errors.map(e=>e.message).join(', '):'Submission failed. Please try again.';
-      g('submit-alert').innerHTML='<div class="alert err">'+msg+'</div>';
+      g('submit-alert').innerHTML='<div class="alert err">Submission failed. Please check your internet connection and try again.</div>';
       btn.disabled=false;
       btn.textContent='Submit application';
     }
-  }catch(err){
+  } catch(err) {
     g('submit-alert').innerHTML='<div class="alert err">Network error — please check your internet connection and try again.</div>';
     btn.disabled=false;
     btn.textContent='Submit application';
