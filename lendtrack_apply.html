@@ -45,7 +45,7 @@ body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:#1a1a1a
 <body>
 <div class="wrap">
   <div class="logo">
-    <div class="logo-name">Incredible Lending</div>
+    <div class="logo-name">LendTrack</div>
     <div class="logo-sub">Loan application form</div>
   </div>
 
@@ -139,36 +139,24 @@ body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:#1a1a1a
     </div>
   </div>
 
-  <div class="footer">Powered by LendTrack &mdash; Incredible Lending</div>
+  <div class="footer">Powered by LendTrack &mdash; Lending management system</div>
 </div>
 
 <script>
 // ---------------------------------------------------------------
-// CONFIGURATION — both services are active
-// Formspree: sends you an email for every submission
-// Google Sheets: saves the application to your spreadsheet
-//                so it appears in the dashboard automatically
+// YOUR CONFIGURATION — fill in both values below
 // ---------------------------------------------------------------
-const FORMSPREE_ID     = 'xwvwdnzr';
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzXb7q7oEUmf-Dgqw9a-_buYvoAAzXkUOiyQvvZC5MC7vNzkm91jht1sCxwa12ckIFWcA/exec';
+const FORMSPREE_ID = 'xwvwdnzr';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwDZKETEKR1wr1f_4l7ws6QL_88C_TnnmD3VWnSHbzdE0Sz7p9-PHjccI2qLcxLBQU5fg/exec';
 // ---------------------------------------------------------------
 
 function g(id){return document.getElementById(id);}
 function val(id){return g(id).value.trim();}
 function numVal(id){return +g(id).value||0;}
-function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 
-function markErr(id){
-  const el=g(id);
-  el.style.borderColor='#E24B4A';
-  el.style.background='#fff8f8';
-}
-function clearErr(id){
-  const el=g(id);
-  if(!el)return;
-  el.style.borderColor='';
-  el.style.background='';
-}
+function markErr(id){const el=g(id);el.style.borderColor='#E24B4A';el.style.background='#fff8f8';}
+function clearErr(id){const el=g(id);if(!el)return;el.style.borderColor='';el.style.background='';}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 
 window.addEventListener('DOMContentLoaded',function(){
   ['f-first','f-last','f-phone','f-email','f-amount','f-term','f-purpose'].forEach(id=>{
@@ -180,16 +168,11 @@ async function submitForm(){
   g('form-alert').innerHTML='';
   g('submit-alert').innerHTML='';
 
-  const first   = val('f-first');
-  const last    = val('f-last');
-  const phone   = val('f-phone');
-  const email   = val('f-email');
-  const amount  = numVal('f-amount');
-  const term    = numVal('f-term');
-  const purpose = val('f-purpose');
+  const first=val('f-first'),last=val('f-last'),phone=val('f-phone'),
+        email=val('f-email'),amount=numVal('f-amount'),
+        term=numVal('f-term'),purpose=val('f-purpose');
 
-  // Validate required fields
-  let hasErr = false;
+  let hasErr=false;
   [['f-first',first],['f-last',last],['f-phone',phone],
    ['f-email',email],['f-amount',amount],['f-term',term],['f-purpose',purpose]
   ].forEach(([id,v])=>{if(!v){markErr(id);hasErr=true;}});
@@ -199,91 +182,88 @@ async function submitForm(){
     window.scrollTo({top:0,behavior:'smooth'});
     return;
   }
+
   if(!email.includes('@')||!email.includes('.')){
     markErr('f-email');
     g('form-alert').innerHTML='<div class="alert err">Please enter a valid email address.</div>';
     return;
   }
 
-  const btn = g('submit-btn');
-  btn.disabled = true;
-  btn.textContent = 'Submitting...';
+  if(GOOGLE_SCRIPT_URL==='YOUR_GOOGLE_SCRIPT_URL'){
+    g('submit-alert').innerHTML='<div class="alert err"><strong>Setup needed:</strong> This form has not been fully configured yet. Please contact the lender directly.</div>';
+    return;
+  }
 
-  const submittedAt = new Date().toLocaleString('en-ZA',{dateStyle:'full',timeStyle:'short'});
+  const btn=g('submit-btn');
+  btn.disabled=true;
+  btn.textContent='Submitting...';
 
-  // Data object for Google Sheets / dashboard
+  // Build application object for Google Sheets
   const appData = {
-    id:          uid(),
+    id: uid(),
     first, last, phone, email,
-    idnum:       val('f-idnum'),
-    address:     val('f-address'),
-    employment:  val('f-employment'),
-    income:      numVal('f-income'),
-    employer:    val('f-employer'),
+    idnum: val('f-idnum') || '',
+    address: val('f-address') || '',
+    employment: val('f-employment') || '',
+    income: numVal('f-income') || 0,
+    employer: val('f-employer') || '',
     amount, term, purpose,
-    notes:       val('f-notes'),
-    status:      'pending',
-    submittedAt
+    notes: val('f-notes') || '',
+    status: 'pending',
+    submittedAt: new Date().toLocaleString('en-ZA',{dateStyle:'full',timeStyle:'short'})
   };
 
-  // Email payload for Formspree
+  // Build email payload for Formspree
   const emailPayload = {
-    '_subject':             'New loan application — ' + first + ' ' + last,
-    'Full Name':            first + ' ' + last,
-    'Phone':                phone,
-    'Email':                email,
-    'ID Number':            appData.idnum       || 'Not provided',
-    'Address':              appData.address     || 'Not provided',
-    'Employment Status':    appData.employment  || 'Not provided',
-    'Monthly Income (R)':  appData.income ? 'R' + Number(appData.income).toLocaleString() : 'Not provided',
-    'Employer':             appData.employer    || 'Not provided',
-    'Loan Amount':          'R' + amount.toLocaleString(),
-    'Preferred Term':       term + ' months',
-    'Purpose of Loan':      purpose,
-    'Additional Notes':     appData.notes       || 'None',
-    'Submitted At':         submittedAt
+    '_subject': 'New loan application — '+first+' '+last,
+    'Full Name': first+' '+last,
+    'Phone': phone,
+    'Email': email,
+    'ID Number': appData.idnum||'Not provided',
+    'Address': appData.address||'Not provided',
+    'Employment Status': appData.employment||'Not provided',
+    'Monthly Income (R)': appData.income?'R'+appData.income.toLocaleString():'Not provided',
+    'Employer': appData.employer||'Not provided',
+    'Loan Amount Requested': 'R'+amount.toLocaleString(),
+    'Preferred Term': term+' months',
+    'Purpose of Loan': purpose,
+    'Additional Notes': appData.notes||'None',
+    'Submitted At': appData.submittedAt
   };
 
-  // Fire both requests in parallel — succeed if at least one works
-  const [sheetsResult, formspreeResult] = await Promise.allSettled([
+  try {
+    // Send to both in parallel
+    const [sheetsRes, formspreeRes] = await Promise.allSettled([
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode:   'no-cors',
+        body:   JSON.stringify(appData)
+      }),
+      fetch('https://formspree.io/f/'+FORMSPREE_ID, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','Accept':'application/json'},
+        body: JSON.stringify(emailPayload)
+      })
+    ]);
 
-    // 1. Google Sheets (saves to spreadsheet + shows in dashboard)
-    fetch(GOOGLE_SCRIPT_URL, {
-      method:   'POST',
-      redirect: 'follow',
-      headers:  {'Content-Type':'text/plain'},
-      body:     JSON.stringify(appData)
-    }),
+    const sheetsOk = sheetsRes.status === 'fulfilled';
+    const formspreeOk = formspreeRes.status === 'fulfilled' && formspreeRes.value.ok;
 
-    // 2. Formspree (sends you an email notification)
-    fetch('https://formspree.io/f/' + FORMSPREE_ID, {
-      method:  'POST',
-      headers: {'Content-Type':'application/json','Accept':'application/json'},
-      body:    JSON.stringify(emailPayload)
-    })
-  ]);
-
-  const sheetsOk    = sheetsResult.status    === 'fulfilled' && sheetsResult.value.ok;
-  const formspreeOk = formspreeResult.status === 'fulfilled' && formspreeResult.value.ok;
-
-  if(sheetsOk || formspreeOk){
-    // At least one channel succeeded — show success to borrower
-    g('success-name').textContent = first;
-    g('form-view').style.display  = 'none';
-    g('success-view').style.display = 'block';
-    window.scrollTo({top:0,behavior:'smooth'});
-  } else {
-    // Both failed — show error with details
-    let msg = 'Submission failed. Please check your internet connection and try again.';
-    if(formspreeResult.status === 'fulfilled' && !formspreeResult.value.ok){
-      try{
-        const d = await formspreeResult.value.json();
-        if(d.errors) msg = d.errors.map(e=>e.message).join(', ');
-      }catch(e){}
+    if(sheetsOk || formspreeOk){
+      // At least one succeeded — show success
+      g('success-name').textContent = first;
+      g('form-view').style.display = 'none';
+      g('success-view').style.display = 'block';
+      window.scrollTo({top:0,behavior:'smooth'});
+    } else {
+      g('submit-alert').innerHTML='<div class="alert err">Submission failed. Please check your internet connection and try again.</div>';
+      btn.disabled=false;
+      btn.textContent='Submit application';
     }
-    g('submit-alert').innerHTML = '<div class="alert err">' + msg + '</div>';
-    btn.disabled    = false;
-    btn.textContent = 'Submit application';
+  } catch(err) {
+    g('submit-alert').innerHTML='<div class="alert err">Network error — please check your internet connection and try again.</div>';
+    btn.disabled=false;
+    btn.textContent='Submit application';
   }
 }
 </script>
