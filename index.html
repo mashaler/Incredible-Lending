@@ -58,19 +58,100 @@ table{border-collapse:collapse;width:100%}
 .step-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#378ADD;color:#fff;font-size:11px;font-weight:600;flex-shrink:0}
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid #c8c8c4;border-top-color:#378ADD;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── AUTH SCREEN ── */
+#auth-screen{position:fixed;inset:0;background:#f0f0ec;z-index:999;display:flex;align-items:center;justify-content:center;}
+.auth-card{background:#fff;border:1px solid #d8d8d4;border-radius:16px;padding:36px 32px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,0.08);}
+.auth-logo{font-size:22px;font-weight:700;color:#185FA5;margin-bottom:4px;}
+.auth-sub{font-size:12px;color:#888;margin-bottom:28px;}
+.auth-label{font-size:13px;font-weight:500;color:#555;margin-bottom:10px;display:block;}
+.auth-err{background:#fcebeb;border:1px solid #F09595;color:#791F1F;padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none;}
+
+/* PIN pad (mobile) */
+.pin-dots{display:flex;gap:12px;justify-content:center;margin-bottom:24px;}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:#e0e0dc;transition:background 0.15s;}
+.pin-dot.filled{background:#378ADD;}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:220px;margin:0 auto;}
+.pin-key{height:56px;border:1px solid #d8d8d4;border-radius:10px;background:#fff;font-size:20px;font-weight:500;cursor:pointer;color:#1a1a1a;transition:background 0.1s;}
+.pin-key:active{background:#e8f2ff;}
+.pin-key.del{font-size:16px;color:#888;}
+.pin-key.empty{border:none;background:none;cursor:default;}
+
+/* Password (desktop) */
+.pw-input{width:100%;padding:12px 14px;border:1px solid #c8c8c4;border-radius:10px;font-size:16px;text-align:center;letter-spacing:2px;margin-bottom:16px;}
+.pw-input:focus{outline:none;border-color:#378ADD;box-shadow:0 0 0 3px rgba(55,138,221,0.12);}
+.pw-btn{width:100%;padding:12px;background:#378ADD;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;}
+.pw-btn:hover{background:#2670b8;}
+
+/* setup mode */
+.auth-setup-hint{font-size:12px;color:#888;margin-top:16px;line-height:1.5;}
+
 @media print{
-  nav,.modal-wrap,.notif-bar{display:none!important}
+  nav,.modal-wrap,.notif-bar,#auth-screen{display:none!important}
   main{padding:0!important}
 }
 </style>
 </head>
 <body>
+
+<!-- ═══════════════════════════════════════════
+     AUTH SCREEN  (shown until correct credential)
+════════════════════════════════════════════ -->
+<div id="auth-screen">
+  <div class="auth-card" id="auth-card" style="max-width:340px;">
+    <div class="auth-logo">Incredible Lending</div>
+    <div class="auth-sub" id="auth-sub">Enter your PIN to continue</div>
+
+    <!-- PIN UI (shown on touch/mobile) -->
+    <div id="pin-ui">
+      <div class="pin-dots" id="pin-dots">
+        <div class="pin-dot" id="d0"></div>
+        <div class="pin-dot" id="d1"></div>
+        <div class="pin-dot" id="d2"></div>
+        <div class="pin-dot" id="d3"></div>
+      </div>
+      <div class="auth-err" id="pin-err"></div>
+      <div class="pin-grid" id="pin-grid">
+        <button class="pin-key" onclick="pinKey('1')">1</button>
+        <button class="pin-key" onclick="pinKey('2')">2</button>
+        <button class="pin-key" onclick="pinKey('3')">3</button>
+        <button class="pin-key" onclick="pinKey('4')">4</button>
+        <button class="pin-key" onclick="pinKey('5')">5</button>
+        <button class="pin-key" onclick="pinKey('6')">6</button>
+        <button class="pin-key" onclick="pinKey('7')">7</button>
+        <button class="pin-key" onclick="pinKey('8')">8</button>
+        <button class="pin-key" onclick="pinKey('9')">9</button>
+        <button class="pin-key empty"></button>
+        <button class="pin-key" onclick="pinKey('0')">0</button>
+        <button class="pin-key del" onclick="pinDel()">⌫</button>
+      </div>
+      <div class="auth-setup-hint" id="pin-setup-hint" style="display:none;">First time? Enter a 4-digit PIN to set it up.</div>
+    </div>
+
+    <!-- Password UI (shown on desktop) -->
+    <div id="pw-ui" style="display:none;">
+      <div class="auth-err" id="pw-err"></div>
+      <input class="pw-input" type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')pwSubmit()">
+      <button class="pw-btn" onclick="pwSubmit()">Unlock</button>
+      <div class="auth-setup-hint" id="pw-setup-hint" style="display:none;">First time? Type a password and press Unlock to set it up.</div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <button onclick="toggleAuthMode()" id="mode-toggle-btn" style="background:none;border:none;color:#888;font-size:12px;cursor:pointer;text-decoration:underline;"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════════ -->
+<div id="app" style="display:none;">
 <div id="root" style="display:flex;min-height:100vh;background:#f0f0ec;">
 
 <nav style="width:188px;flex-shrink:0;background:#fff;border-right:1px solid #d8d8d4;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;">
   <div style="padding:15px 16px;border-bottom:1px solid #d8d8d4;">
     <div style="font-size:15px;font-weight:600;color:#185FA5;">LendTrack</div>
-    <div style="font-size:11px;color:#888;margin-top:2px;">Incredible Lending management</div>
+    <div style="font-size:11px;color:#888;margin-top:2px;">Incredible Lending</div>
   </div>
   <div style="padding:6px 0;flex:1;overflow-y:auto;">
     <button onclick="nav('dashboard')" id="nb-dashboard" class="nav-btn active">&#9632; Dashboard</button>
@@ -83,9 +164,11 @@ table{border-collapse:collapse;width:100%}
     <button onclick="nav('payments')" id="nb-payments" class="nav-btn">&#10003; Payments</button>
     <button onclick="nav('reports')" id="nb-reports" class="nav-btn">&#9650; Reports</button>
     <button onclick="nav('portal')" id="nb-portal" class="nav-btn">&#128279; Apply portal</button>
+    <button onclick="nav('security')" id="nb-security" class="nav-btn">&#128274; Security</button>
   </div>
-  <div style="padding:12px 14px;border-top:1px solid #d8d8d4;">
+  <div style="padding:12px 14px;border-top:1px solid #d8d8d4;display:flex;flex-direction:column;gap:6px;">
     <button onclick="refreshApps()" id="refresh-btn" style="width:100%;padding:6px;background:#f7f7f5;border:1px solid #d8d8d4;border-radius:6px;cursor:pointer;font-size:12px;color:#555;font-family:inherit;">&#8635; Refresh applications</button>
+    <button onclick="lockApp()" style="width:100%;padding:6px;background:#fff1f1;border:1px solid #F09595;border-radius:6px;cursor:pointer;font-size:12px;color:#791F1F;font-family:inherit;">&#128274; Lock</button>
   </div>
 </nav>
 
@@ -199,11 +282,10 @@ table{border-collapse:collapse;width:100%}
       <div style="font-size:18px;font-weight:600;">Apply portal</div>
     </div>
     <div style="max-width:540px;display:flex;flex-direction:column;gap:16px;">
-
       <div class="card-pad" style="text-align:center;padding:32px 24px;">
         <div style="font-size:40px;margin-bottom:14px;">&#128279;</div>
         <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Borrower application link</div>
-        <div style="font-size:12px;color:#888;margin-bottom:20px;line-height:1.6;">Share this link with anyone who wants to apply for a loan. They can open it on any phone or browser and submit their application directly.</div>
+        <div style="font-size:12px;color:#888;margin-bottom:20px;line-height:1.6;">Share this link with anyone who wants to apply for a loan. They open it on any phone or browser and submit their application directly.</div>
         <div style="background:#f0f0ec;border:1px solid #d8d8d4;border-radius:8px;padding:12px 16px;font-size:13px;font-weight:600;color:#185FA5;word-break:break-all;margin-bottom:16px;cursor:pointer;" onclick="copyLink()" id="portal-url">https://incredible-lending.vercel.app/lendtrack_apply.html</div>
         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
           <button onclick="copyLink()" class="btn-primary" id="copy-btn">&#128203; Copy link</button>
@@ -212,124 +294,296 @@ table{border-collapse:collapse;width:100%}
         </div>
         <div id="copy-msg" style="margin-top:12px;font-size:12px;color:#27500A;display:none;">&#10003; Link copied to clipboard!</div>
       </div>
-
       <div class="card-pad" style="background:#f7f7f5;">
         <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px;">How it works</div>
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <div style="display:flex;gap:12px;align-items:flex-start;font-size:13px;">
-            <span class="step-num">1</span><span>Send the link to your borrower via WhatsApp, SMS, or email.</span>
-          </div>
-          <div style="display:flex;gap:12px;align-items:flex-start;font-size:13px;">
-            <span class="step-num">2</span><span>They open it in any browser, fill in the form, and click Submit.</span>
-          </div>
-          <div style="display:flex;gap:12px;align-items:flex-start;font-size:13px;">
-            <span class="step-num">3</span><span>You receive an email notification and the application appears in your <b>Applications</b> tab after clicking Refresh.</span>
-          </div>
-          <div style="display:flex;gap:12px;align-items:flex-start;font-size:13px;">
-            <span class="step-num">4</span><span>Review and approve or reject — approving automatically creates the loan.</span>
-          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;font-size:13px;"><span class="step-num">1</span><span>Send the link via WhatsApp, SMS, or email.</span></div>
+          <div style="display:flex;gap:12px;align-items:flex-start;font-size:13px;"><span class="step-num">2</span><span>Borrower opens it, fills in the form, and clicks Submit.</span></div>
+          <div style="display:flex;gap:12px;align-items:flex-start;font-size:13px;"><span class="step-num">3</span><span>You receive an email and the application appears in <b>Applications</b> after clicking Refresh.</span></div>
+          <div style="display:flex;gap:12px;align-items:flex-start;font-size:13px;"><span class="step-num">4</span><span>Approve or reject — approving automatically creates the loan.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECURITY PAGE -->
+  <div id="page-security" class="page">
+    <div style="margin-bottom:20px;font-size:18px;font-weight:600;">Security settings</div>
+    <div style="max-width:480px;display:flex;flex-direction:column;gap:16px;">
+
+      <div class="card-pad">
+        <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #d8d8d4;">Change PIN (mobile)</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div class="field"><label>New PIN (4 digits)</label><input id="new-pin" type="password" inputmode="numeric" maxlength="4" placeholder="e.g. 1234"></div>
+          <div class="field"><label>Confirm PIN</label><input id="confirm-pin" type="password" inputmode="numeric" maxlength="4" placeholder="Repeat PIN"></div>
+          <div id="pin-change-msg" style="font-size:12px;"></div>
+          <button onclick="changePin()" class="btn-primary" style="width:auto;">Save PIN</button>
         </div>
       </div>
 
+      <div class="card-pad">
+        <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #d8d8d4;">Change password (desktop)</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div class="field"><label>New password</label><input id="new-pw" type="password" placeholder="At least 6 characters"></div>
+          <div class="field"><label>Confirm password</label><input id="confirm-pw" type="password" placeholder="Repeat password"></div>
+          <div id="pw-change-msg" style="font-size:12px;"></div>
+          <button onclick="changePassword()" class="btn-primary" style="width:auto;">Save password</button>
+        </div>
+      </div>
+
+      <div class="card-pad" style="background:#f7f7f5;">
+        <div style="font-size:12px;color:#888;line-height:1.6;">
+          <strong style="color:#555;">Session policy:</strong> Your session stays active until you close the tab or click Lock. PIN is used on touch devices; password is used on desktop. Both can be set independently.
+        </div>
+      </div>
     </div>
   </div>
 
 </main>
 </div>
-
-<div id="modal-wrap" class="modal-wrap">
-  <div class="modal-box">
-    <div id="modal-content"></div>
-  </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script>
-// ---------------------------------------------------------------
-// CONFIG — set your Google Script URL here OR via Settings page
-// ---------------------------------------------------------------
-let GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwDZKETEKR1wr1f_4l7ws6QL_88C_TnnmD3VWnSHbzdE0Sz7p9-PHjccI2qLcxLBQU5fg/exec';
-// ---------------------------------------------------------------
+<div id="modal-wrap" class="modal-wrap">
+  <div class="modal-box"><div id="modal-content"></div></div>
+</div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" defer></script>
+<script defer>
+// ═══════════════════════════════════════════════════
+//  AUTH SYSTEM
+// ═══════════════════════════════════════════════════
+const AUTH_KEY = 'lendtrack_auth';
+const SESSION_KEY = 'lendtrack_session'; // sessionStorage — clears on tab close
+
+const DEFAULT_PIN = '1234';
+const DEFAULT_PW  = 'lendtrack';
+
+let pinBuffer = '';
+let isMobile = false;
+let authMode = 'pin'; // 'pin' or 'pw'
+let isSetupMode = false;
+let pendingSetupPin = '';
+
+function hashStr(s){
+  // Simple but functional hash — not cryptographic, but fine for local auth
+  let h = 0;
+  for(let i=0;i<s.length;i++){h=(Math.imul(31,h)+s.charCodeAt(i))|0;}
+  return h.toString(16);
+}
+
+function getAuthData(){
+  try{return JSON.parse(localStorage.getItem(AUTH_KEY)||'{}');}catch(e){return {};}
+}
+function saveAuthData(d){
+  try{localStorage.setItem(AUTH_KEY,JSON.stringify(d));}catch(e){}
+}
+
+function isSessionValid(){
+  return sessionStorage.getItem(SESSION_KEY) === 'unlocked';
+}
+function setSessionValid(){
+  sessionStorage.setItem(SESSION_KEY,'unlocked');
+}
+function clearSession(){
+  sessionStorage.removeItem(SESSION_KEY);
+}
+
+function showApp(){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  setSessionValid();
+  load();
+}
+
+function lockApp(){
+  clearSession();
+  pinBuffer='';
+  updatePinDots();
+  document.getElementById('pw-input').value='';
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('pin-err').style.display='none';
+  document.getElementById('pw-err').style.display='none';
+}
+
+function initAuth(){
+  // Detect mobile / touch device
+  isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 768);
+
+  const auth = getAuthData();
+  // First time — no credentials set
+  if(!auth.pinHash && !auth.pwHash){
+    isSetupMode = true;
+  }
+
+  // Pick default mode based on device, allow toggle
+  authMode = isMobile ? 'pin' : 'pw';
+  renderAuthUI();
+
+  if(isSessionValid()){
+    showApp();
+  }
+}
+
+function renderAuthUI(){
+  const pinUI = document.getElementById('pin-ui');
+  const pwUI  = document.getElementById('pw-ui');
+  const sub   = document.getElementById('auth-sub');
+  const toggle= document.getElementById('mode-toggle-btn');
+  const pinHint=document.getElementById('pin-setup-hint');
+  const pwHint =document.getElementById('pw-setup-hint');
+
+  if(authMode==='pin'){
+    pinUI.style.display='block';
+    pwUI.style.display='none';
+    sub.textContent = isSetupMode ? 'Set up your 4-digit PIN' : 'Enter your PIN to continue';
+    toggle.textContent = 'Use password instead';
+    pinHint.style.display = isSetupMode ? 'block':'none';
+    pwHint.style.display='none';
+  } else {
+    pinUI.style.display='none';
+    pwUI.style.display='block';
+    sub.textContent = isSetupMode ? 'Set up your password' : 'Enter your password to continue';
+    toggle.textContent = 'Use PIN instead';
+    pwHint.style.display = isSetupMode ? 'block':'none';
+    pinHint.style.display='none';
+  }
+  pinBuffer='';
+  updatePinDots();
+}
+
+function toggleAuthMode(){
+  authMode = authMode==='pin' ? 'pw' : 'pin';
+  renderAuthUI();
+}
+
+// ── PIN ──
+function updatePinDots(){
+  for(let i=0;i<4;i++){
+    document.getElementById('d'+i).classList.toggle('filled', i<pinBuffer.length);
+  }
+}
+
+function pinKey(k){
+  if(pinBuffer.length>=4) return;
+  pinBuffer += k;
+  updatePinDots();
+  if(pinBuffer.length===4){
+    setTimeout(checkPin, 120);
+  }
+}
+
+function pinDel(){
+  pinBuffer = pinBuffer.slice(0,-1);
+  updatePinDots();
+  document.getElementById('pin-err').style.display='none';
+}
+
+function checkPin(){
+  const auth = getAuthData();
+  const h = hashStr(pinBuffer);
+
+  if(!auth.pinHash){
+    // Setup mode — first entry
+    if(!pendingSetupPin){
+      pendingSetupPin = pinBuffer;
+      pinBuffer='';
+      updatePinDots();
+      document.getElementById('auth-sub').textContent='Confirm your PIN';
+      return;
+    }
+    // Confirm
+    if(pendingSetupPin === pinBuffer){
+      const d=getAuthData();d.pinHash=hashStr(pinBuffer);saveAuthData(d);
+      pendingSetupPin='';
+      showApp();
+    } else {
+      showPinErr('PINs did not match. Try again.');
+      pendingSetupPin='';
+    }
+    return;
+  }
+
+  if(h === auth.pinHash){
+    showApp();
+  } else {
+    showPinErr('Incorrect PIN. Try again.');
+  }
+}
+
+function showPinErr(msg){
+  const el=document.getElementById('pin-err');
+  el.textContent=msg;el.style.display='block';
+  pinBuffer='';updatePinDots();
+  // Shake animation
+  const card=document.getElementById('auth-card');
+  card.style.transform='translateX(-8px)';
+  setTimeout(()=>{card.style.transform='translateX(8px)';},80);
+  setTimeout(()=>{card.style.transform='';},160);
+}
+
+// ── PASSWORD ──
+function pwSubmit(){
+  const pw = document.getElementById('pw-input').value;
+  if(!pw){return;}
+  const auth = getAuthData();
+  const h = hashStr(pw);
+
+  if(!auth.pwHash){
+    // Setup
+    if(pw.length < 4){
+      showPwErr('Password must be at least 4 characters.');return;
+    }
+    auth.pwHash=h;saveAuthData(auth);
+    showApp();return;
+  }
+
+  if(h===auth.pwHash){
+    showApp();
+  } else {
+    showPwErr('Incorrect password. Try again.');
+    document.getElementById('pw-input').value='';
+  }
+}
+
+function showPwErr(msg){
+  const el=document.getElementById('pw-err');
+  el.textContent=msg;el.style.display='block';
+}
+
+// ── Change credentials from Security page ──
+function changePin(){
+  const np=document.getElementById('new-pin').value;
+  const cp=document.getElementById('confirm-pin').value;
+  const msg=document.getElementById('pin-change-msg');
+  if(!/^\d{4}$/.test(np)){msg.innerHTML='<span style="color:#791F1F;">PIN must be exactly 4 digits.</span>';return;}
+  if(np!==cp){msg.innerHTML='<span style="color:#791F1F;">PINs do not match.</span>';return;}
+  const d=getAuthData();d.pinHash=hashStr(np);saveAuthData(d);
+  document.getElementById('new-pin').value='';
+  document.getElementById('confirm-pin').value='';
+  msg.innerHTML='<span style="color:#27500A;">&#10003; PIN updated successfully.</span>';
+}
+
+function changePassword(){
+  const np=document.getElementById('new-pw').value;
+  const cp=document.getElementById('confirm-pw').value;
+  const msg=document.getElementById('pw-change-msg');
+  if(np.length<4){msg.innerHTML='<span style="color:#791F1F;">Password must be at least 4 characters.</span>';return;}
+  if(np!==cp){msg.innerHTML='<span style="color:#791F1F;">Passwords do not match.</span>';return;}
+  const d=getAuthData();d.pwHash=hashStr(np);saveAuthData(d);
+  document.getElementById('new-pw').value='';
+  document.getElementById('confirm-pw').value='';
+  msg.innerHTML='<span style="color:#27500A;">&#10003; Password updated successfully.</span>';
+}
+
+// ═══════════════════════════════════════════════════
+//  APP CONFIG
+// ═══════════════════════════════════════════════════
+let GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwDZKETEKR1wr1f_4l7ws6QL_88C_TnnmD3VWnSHbzdE0Sz7p9-PHjccI2qLcxLBQU5fg/exec';
 const STORAGE_KEY = 'lendtrack5';
-const CFG_KEY = 'lendtrack5_cfg';
 let loans=[],borrowers=[],payments=[],applications=[],loanFilter='all',appFilter='pending';
 let sChart=null,iChart=null;
 
-const APPS_SCRIPT_CODE = `function doPost(e) {
-  try {
-    var data = JSON.parse(e.postData.contents);
-    var sheet = SpreadsheetApp.getActiveSpreadsheet()
-      .getSheetByName('Applications');
-    if (!sheet) {
-      sheet = SpreadsheetApp.getActiveSpreadsheet()
-        .insertSheet('Applications');
-      sheet.appendRow(['id','first','last','phone','email',
-        'idnum','address','employment','income','employer',
-        'amount','term','purpose','notes','status','submittedAt']);
-    }
-    // Check for duplicate id
-    var existing = sheet.getDataRange().getValues();
-    for (var i = 1; i < existing.length; i++) {
-      if (existing[i][0] === data.id) {
-        return ContentService
-          .createTextOutput(JSON.stringify({success:true,duplicate:true}))
-          .setMimeType(ContentService.MimeType.JSON);
-      }
-    }
-    sheet.appendRow([
-      data.id, data.first, data.last, data.phone, data.email,
-      data.idnum||'', data.address||'', data.employment||'',
-      data.income||0, data.employer||'',
-      data.amount, data.term, data.purpose,
-      data.notes||'', data.status||'pending', data.submittedAt
-    ]);
-    return ContentService
-      .createTextOutput(JSON.stringify({success:true}))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch(err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({success:false,error:err.message}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function doGet(e) {
-  try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet()
-      .getSheetByName('Applications');
-    if (!sheet) {
-      return ContentService
-        .createTextOutput(JSON.stringify([]))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-    var rows = sheet.getDataRange().getValues();
-    var headers = rows[0];
-    var apps = [];
-    for (var i = 1; i < rows.length; i++) {
-      var obj = {};
-      for (var j = 0; j < headers.length; j++) {
-        obj[headers[j]] = rows[i][j];
-      }
-      apps.push(obj);
-    }
-    return ContentService
-      .createTextOutput(JSON.stringify(apps))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch(err) {
-    return ContentService
-      .createTextOutput(JSON.stringify([]))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}`;
-
-// Load config (script URL)
-function loadConfig(){
-  try{
-    const cfg=JSON.parse(localStorage.getItem(CFG_KEY)||'{}');
-    if(cfg.scriptUrl) GOOGLE_SCRIPT_URL=cfg.scriptUrl;
-  }catch(e){}
-}
 function copyLink(){
   const url='https://incredible-lending.vercel.app/lendtrack_apply.html';
   navigator.clipboard.writeText(url).then(()=>{
@@ -377,17 +631,12 @@ function nav(page){
   document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
   const pe=document.getElementById('page-'+page);if(pe)pe.classList.add('active');
   const nb=document.getElementById('nb-'+page);if(nb)nb.classList.add('active');
-  const fns={dashboard:renderDashboard,applications:renderApplications,loans:renderLoans,borrowers:renderBorrowers,payments:renderPayments,reports:renderReports,portal:renderPortal};
+  const fns={dashboard:renderDashboard,applications:renderApplications,loans:renderLoans,borrowers:renderBorrowers,payments:renderPayments,reports:renderReports};
   if(fns[page])fns[page]();
-}
-
-function renderPortal(){
-  // nothing to load dynamically
 }
 
 function openModal(html){document.getElementById('modal-content').innerHTML=html;document.getElementById('modal-wrap').classList.add('open');}
 function closeModal(){document.getElementById('modal-wrap').classList.remove('open');}
-document.getElementById('modal-wrap').addEventListener('click',function(e){if(e.target===this)closeModal();});
 
 function mhdr(title){return`<div class="modal-hdr"><div style="font-size:16px;font-weight:600;">${title}</div><button onclick="closeModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888;line-height:1;">&#215;</button></div>`;}
 function mftr(cancelFn,confirmFn,label){return`<div class="modal-ftr"><button onclick="${cancelFn}" class="btn-ghost">Cancel</button><button onclick="${confirmFn}" class="btn-primary">${label}</button></div>`;}
@@ -409,88 +658,48 @@ function updateAppBadge(){
   else bar.classList.remove('show');
 }
 
-// ---------------------------------------------------------------
-// GOOGLE SHEETS SYNC
-// ---------------------------------------------------------------
 async function fetchFromSheets(){
-  if(!GOOGLE_SCRIPT_URL) return false;
+  if(!GOOGLE_SCRIPT_URL)return false;
   try{
-    const res = await fetch(GOOGLE_SCRIPT_URL, {method:'GET', redirect:'follow'});
-    const remoteApps = await res.json();
-    if(!Array.isArray(remoteApps)) return false;
-
-    let newCount = 0;
-    remoteApps.forEach(remote => {
-      // Convert numeric strings
-      remote.amount = +remote.amount || 0;
-      remote.term = +remote.term || 0;
-      remote.income = +remote.income || 0;
-      remote.status = remote.status || 'pending';
-
-      const existing = applications.find(a => a.id === remote.id);
-      if(!existing){
-        applications.push(remote);
-        newCount++;
-      }
+    const res=await fetch(GOOGLE_SCRIPT_URL,{method:'GET',redirect:'follow'});
+    const remoteApps=await res.json();
+    if(!Array.isArray(remoteApps))return false;
+    let newCount=0;
+    remoteApps.forEach(remote=>{
+      remote.amount=+remote.amount||0;remote.term=+remote.term||0;remote.income=+remote.income||0;remote.status=remote.status||'pending';
+      const existing=applications.find(a=>a.id===remote.id);
+      if(!existing){applications.push(remote);newCount++;}
     });
-
-    if(newCount > 0){
-      persist();
-    }
+    if(newCount>0)persist();
     return newCount;
-  }catch(e){
-    return false;
-  }
+  }catch(e){return false;}
 }
 
 async function refreshApps(){
   const btn=document.getElementById('refresh-btn');
   const btn2=document.getElementById('app-refresh-btn');
-  const originalText='&#8635; Refresh applications';
   if(btn){btn.innerHTML='<span class="spinner"></span>Refreshing...';btn.disabled=true;}
   if(btn2){btn2.innerHTML='<span class="spinner"></span>Refreshing...';btn2.disabled=true;}
-
   const statusEl=document.getElementById('sync-status');
-
-  if(!GOOGLE_SCRIPT_URL){
-    if(statusEl)statusEl.innerHTML='&#9888; Google Sheets not configured. Go to <b>Settings</b> to set it up.';
-    if(btn){btn.innerHTML=originalText;btn.disabled=false;}
-    if(btn2){btn2.innerHTML='&#8635; Refresh';btn2.disabled=false;}
-    load(true);
-    const cur=document.querySelector('.page.active');
-    if(cur&&cur.id==='page-applications')renderApplications();
-    return;
-  }
-
-  const newCount = await fetchFromSheets();
-
-  if(newCount === false){
-    if(statusEl)statusEl.innerHTML='<span style="color:#791F1F;">&#215; Could not reach Google Sheets. Check your script URL in Settings.</span>';
-  } else if(newCount === 0){
-    if(statusEl)statusEl.innerHTML=`<span style="color:#888;">&#10003; Synced — no new applications. Last checked: ${new Date().toLocaleTimeString('en-ZA')}</span>`;
+  const newCount=await fetchFromSheets();
+  if(newCount===false){
+    if(statusEl)statusEl.innerHTML='<span style="color:#791F1F;">&#215; Could not reach Google Sheets.</span>';
+  } else if(newCount===0){
+    if(statusEl)statusEl.innerHTML=`<span style="color:#888;">&#10003; Synced — no new applications. ${new Date().toLocaleTimeString('en-ZA')}</span>`;
   } else {
-    if(statusEl)statusEl.innerHTML=`<span style="color:#27500A;">&#10003; Synced — ${newCount} new application${newCount>1?'s':''} imported!</span>`;
+    if(statusEl)statusEl.innerHTML=`<span style="color:#27500A;">&#10003; ${newCount} new application${newCount>1?'s':''} imported!</span>`;
   }
-
   updateAppBadge();
   const cur=document.querySelector('.page.active');
   if(cur&&cur.id==='page-applications')renderApplications();
   if(cur&&cur.id==='page-dashboard')renderDashboard();
-
-  if(btn){btn.innerHTML=originalText;btn.disabled=false;}
+  if(btn){btn.innerHTML='&#8635; Refresh applications';btn.disabled=false;}
   if(btn2){btn2.innerHTML='&#8635; Refresh';btn2.disabled=false;}
 }
 
-// Push status update (approve/reject) back to Google Sheets
-async function updateSheetStatus(id, status){
-  if(!GOOGLE_SCRIPT_URL) return;
-  try{
-    await fetch(GOOGLE_SCRIPT_URL, {
-      method: 'POST',
-      redirect: 'follow',
-      body: JSON.stringify({_action:'updateStatus', id, status})
-    });
-  }catch(e){}
+async function updateSheetStatus(id,status){
+  if(!GOOGLE_SCRIPT_URL)return;
+  try{await fetch(GOOGLE_SCRIPT_URL,{method:'POST',redirect:'follow',body:JSON.stringify({_action:'updateStatus',id,status})});}catch(e){}
 }
 
 function renderDashboard(){
@@ -512,17 +721,8 @@ function renderDashboard(){
 function renderApplications(){
   const list=applications.filter(a=>a.status===appFilter);
   const container=document.getElementById('applications-list');
-  if(!GOOGLE_SCRIPT_URL){
-    const warn=`<div style="background:#fff3cd;border:1px solid #EF9F27;border-radius:8px;padding:10px 14px;font-size:12px;color:#633806;margin-bottom:14px;">&#9888; Google Sheets not connected. Go to <b>Settings</b> to set up cross-device sync.</div>`;
-    if(list.length===0){container.innerHTML=warn+`<div class="card-pad" style="text-align:center;color:#888;font-size:13px;padding:40px;">No ${appFilter} applications.</div>`;return;}
-    container.innerHTML=warn+renderAppCards(list);return;
-  }
   if(list.length===0){container.innerHTML=`<div class="card-pad" style="text-align:center;color:#888;font-size:13px;padding:40px;">No ${appFilter} applications. Click Refresh to check for new ones.</div>`;return;}
-  container.innerHTML=renderAppCards(list);
-}
-
-function renderAppCards(list){
-  return list.map(a=>`
+  container.innerHTML=list.map(a=>`
     <div class="card-pad" style="margin-bottom:12px;">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eeecea;">
         <div><div style="font-size:15px;font-weight:600;">${a.first} ${a.last}</div><div style="font-size:12px;color:#888;margin-top:2px;">${a.email} &middot; ${a.phone}${a.idnum?' &middot; ID: '+a.idnum:''}</div></div>
@@ -535,8 +735,7 @@ function renderAppCards(list){
         <div style="background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#666;margin-bottom:3px;">Employment</div><div style="font-size:12px;font-weight:500;">${a.employment||'—'}</div></div>
       </div>
       <div style="font-size:12px;color:#555;background:#f7f7f5;border-radius:6px;padding:8px 10px;border:1px solid #d8d8d4;margin-bottom:${appFilter==='pending'?'12px':'0'};">
-        <strong>Purpose:</strong> ${a.purpose}${a.notes?'<br><strong>Notes:</strong> '+a.notes:''}
-        ${a.address?'<br><strong>Address:</strong> '+a.address:''}
+        <strong>Purpose:</strong> ${a.purpose}${a.notes?'<br><strong>Notes:</strong> '+a.notes:''}${a.address?'<br><strong>Address:</strong> '+a.address:''}
       </div>
       ${appFilter==='pending'?`<div style="display:flex;gap:8px;"><button onclick="approveApp('${a.id}')" class="btn-sm success">&#10003; Approve</button><button onclick="rejectApp('${a.id}')" class="btn-sm danger">&#215; Reject</button></div>`:''}
     </div>`).join('');
@@ -545,8 +744,7 @@ function renderAppCards(list){
 function setAppFilter(f,btn){
   appFilter=f;
   document.querySelectorAll('#af-pending,#af-approved,#af-rejected').forEach(el=>el.classList.remove('active'));
-  btn.classList.add('active');
-  renderApplications();
+  btn.classList.add('active');renderApplications();
 }
 
 function approveApp(id){
@@ -761,7 +959,7 @@ function buildStatementHTML(b,loansForBorrower){
   const totalBorrowed=loansForBorrower.reduce((s,l)=>s+l.principal,0),totalOutstanding=loansForBorrower.reduce((s,l)=>s+getBalance(l),0),totalPaid=payments.filter(p=>loansForBorrower.find(l=>l.id===p.loanId)).reduce((s,p)=>s+p.amount,0),totalIntPaid=payments.filter(p=>loansForBorrower.find(l=>l.id===p.loanId)).reduce((s,p)=>s+p.interest,0);
   return`<div style="font-family:system-ui,sans-serif;font-size:13px;color:#000;max-width:720px;margin:0 auto;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #1a1a1a;">
-      <div><div style="font-size:22px;font-weight:700;color:#185FA5;">LendTrack</div><div style="font-size:11px;color:#888;margin-top:2px;">Lending management system</div></div>
+      <div><div style="font-size:22px;font-weight:700;color:#185FA5;">Incredible Lending</div><div style="font-size:11px;color:#888;margin-top:2px;">LendTrack management system</div></div>
       <div style="text-align:right;"><div style="font-size:18px;font-weight:700;">Account Statement</div><div style="font-size:12px;color:#888;margin-top:3px;">Generated: ${today}</div></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
@@ -808,20 +1006,16 @@ function printStatement(loanId){
 function deleteLoan(id){if(!confirm('Delete this loan and its payments?'))return;loans=loans.filter(l=>l.id!==id);payments=payments.filter(p=>p.loanId!==id);persist();renderDashboard();renderLoans();}
 function deleteBorrower(id){if(!confirm('Delete this borrower?'))return;borrowers=borrowers.filter(b=>b.id!==id);persist();renderBorrowers();}
 
-function persist(){
-  try{localStorage.setItem(STORAGE_KEY,JSON.stringify({loans,borrowers,payments,applications}));}catch(e){}
-}
+function persist(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({loans,borrowers,payments,applications}));}catch(e){}}
 function load(silent=false){
-  try{
-    const raw=localStorage.getItem(STORAGE_KEY);
-    if(raw){const d=JSON.parse(raw);loans=d.loans||[];borrowers=d.borrowers||[];payments=d.payments||[];applications=d.applications||[];}
-  }catch(e){}
-  if(!silent)renderDashboard();
-  else updateAppBadge();
+  try{const raw=localStorage.getItem(STORAGE_KEY);if(raw){const d=JSON.parse(raw);loans=d.loans||[];borrowers=d.borrowers||[];payments=d.payments||[];applications=d.applications||[];}}catch(e){}
+  if(!silent)renderDashboard();else updateAppBadge();
 }
 
-loadConfig();
-load();
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('modal-wrap').addEventListener('click',function(e){if(e.target===this)closeModal();});
+  initAuth();
+});
 </script>
 </body>
 </html>
