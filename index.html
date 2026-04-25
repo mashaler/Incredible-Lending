@@ -343,8 +343,12 @@ table{border-collapse:collapse;width:100%}
 </div>
 </div>
 
-<div id="modal-wrap" class="modal-wrap">
-  <div class="modal-box"><div id="modal-content"></div></div>
+<div id="modal-wrap" class="modal-wrap" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box" onclick="event.stopPropagation()"><div id="modal-content"></div></div>
+</div>
+
+<div id="notify-wrap" class="modal-wrap" style="z-index:60;" onclick="if(event.target===this)closeNotify()">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:480px;"><div id="notify-content"></div></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" defer></script>
@@ -637,6 +641,8 @@ function nav(page){
 
 function openModal(html){document.getElementById('modal-content').innerHTML=html;document.getElementById('modal-wrap').classList.add('open');}
 function closeModal(){document.getElementById('modal-wrap').classList.remove('open');}
+function closeNotify(){document.getElementById('notify-wrap').classList.remove('open');}
+function openNotify(html){document.getElementById('notify-content').innerHTML=html;document.getElementById('notify-wrap').classList.add('open');}
 
 function mhdr(title){return`<div class="modal-hdr"><div style="font-size:16px;font-weight:600;">${title}</div><button onclick="closeModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888;line-height:1;">&#215;</button></div>`;}
 function mftr(cancelFn,confirmFn,label){return`<div class="modal-ftr"><button onclick="${cancelFn}" class="btn-ghost">Cancel</button><button onclick="${confirmFn}" class="btn-primary">${label}</button></div>`;}
@@ -855,7 +861,7 @@ function showNotifyModal(a, decision, loan){
   const btnBase   = 'display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;';
   const subTxt    = 'font-size:11px;font-weight:400;opacity:0.85;';
 
-  let h = mhdr('Notify customer');
+  let h = '<div class="modal-hdr"><div style="font-size:16px;font-weight:600;">Notify customer</div><button onclick="closeNotify()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888;line-height:1;">&#215;</button></div>';
   h += '<div style="background:'+bg+';border:1px solid '+bc+';border-radius:8px;padding:11px 14px;margin-bottom:14px;font-size:13px;color:'+col+';font-weight:600;">'+(ok?'✓ Approved':'✕ Rejected')+' — '+name+' '+last+', '+amt+'</div>';
   h += '<p style="font-size:13px;color:#444;margin-bottom:12px;line-height:1.5;">Click a button to notify <strong>'+name+'</strong> using the contact details they provided.</p>';
   h += '<div style="display:flex;flex-direction:column;gap:10px;">';
@@ -881,9 +887,9 @@ function showNotifyModal(a, decision, loan){
   h += '</div>';
   h += '<div style="margin-top:12px;padding:10px 12px;background:#f7f7f5;border-radius:8px;border:1px solid #d8d8d4;font-size:12px;color:#555;line-height:1.6;">'
      + '<strong>Message preview:</strong><br><span style="white-space:pre-wrap;">'+waMsg.replace(/\*/g,'')+'</span></div>';
-  h += '<div class="modal-ftr"><button onclick="closeModal()" class="btn-ghost">Done</button></div>';
+  h += '<div class="modal-ftr"><button onclick="closeNotify()" class="btn-ghost">Done</button></div>';
 
-  openModal(h);
+  openNotify(h);
 }
 
 function renderLoans(){
@@ -1114,8 +1120,6 @@ function load(silent=false){
 }
 
 document.addEventListener('DOMContentLoaded',function(){
-  document.getElementById('modal-wrap').addEventListener('click',function(e){if(e.target===this)closeModal();});
-  document.querySelector('.modal-box').addEventListener('click',function(e){e.stopPropagation();});
   initAuth();
 });
 </script>
