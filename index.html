@@ -718,83 +718,30 @@ function renderDashboard(){
     return`<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span style="font-weight:500;">${b?b.first+' '+b.last:'?'}</span><span style="color:#888;">${fmtD(bal)} left</span></div><div style="height:7px;background:#e8e8e4;border-radius:4px;overflow:hidden;border:1px solid #d8d8d4;"><div style="height:100%;width:${pct}%;background:#378ADD;border-radius:4px;"></div></div><div style="font-size:11px;color:#888;margin-top:3px;">${pct}% repaid</div></div>`;}).join('');
 }
 
-function renderAppCard(a){
-  var phone = a.phone||'', email = a.email||'';
-  var amt   = 'R'+Number(a.amount||0).toLocaleString();
-
-  // ── WhatsApp & Email links (built with plain string concat — no backtick nesting) ──
-  var rejWAMsg   = 'Hi '+a.first+', thank you for applying with Incredible Lending. Unfortunately your application for '+amt+' could not be approved at this time.'+(a.rejectionReason?' Reason: '+a.rejectionReason:'')+' Please contact us if you have any questions.';
-  var rejMailSub = encodeURIComponent('Your Loan Application - Update');
-  var rejMailBod = encodeURIComponent('Hi '+a.first+',\n\nThank you for applying with Incredible Lending.\n\nAfter reviewing your application for '+amt+', we are unable to proceed at this time.'+(a.rejectionReason?'\n\nReason: '+a.rejectionReason:'')+'\n\nPlease contact us if you have any questions.\n\nKind regards,\nIncredible Lending');
-
-  var appWAMsg   = 'Hi '+a.first+', great news! Your loan application with Incredible Lending has been *APPROVED*. We will contact you shortly with the full loan details. Thank you for choosing Incredible Lending!';
-  var appMailSub = encodeURIComponent('Your Loan Application - Approved');
-  var appMailBod = encodeURIComponent('Hi '+a.first+',\n\nGreat news! Your loan application with Incredible Lending has been approved.\n\nWe will be in touch shortly with the full loan details.\n\nKind regards,\nIncredible Lending');
-
-  var waRejHref  = phone ? waLink(phone, rejWAMsg)  : '';
-  var waAppHref  = phone ? waLink(phone, appWAMsg)  : '';
-  var mailRejHref= email ? 'mailto:'+email+'?subject='+rejMailSub+'&body='+rejMailBod : '';
-  var mailAppHref= email ? 'mailto:'+email+'?subject='+appMailSub+'&body='+appMailBod : '';
-
-  var btnStyle = 'display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;';
-  var waBtn    = phone ? '<a href="'+waRejHref+'"  target="_blank" rel="noopener" style="'+btnStyle+'background:#25D366;color:#fff;">&#128172; WhatsApp</a>' : '';
-  var mailBtn  = email ? '<a href="'+mailRejHref+'" style="'+btnStyle+'background:#378ADD;color:#fff;">&#9993; Email</a>'  : '';
-  var waAppBtn = phone ? '<a href="'+waAppHref+'"  target="_blank" rel="noopener" style="'+btnStyle+'background:#25D366;color:#fff;">&#128172; WhatsApp</a>' : '';
-  var mailAppBtn=email ? '<a href="'+mailAppHref+'" style="'+btnStyle+'background:#378ADD;color:#fff;">&#9993; Email</a>'  : '';
-
-  var h = '<div class="card-pad" style="margin-bottom:12px;">';
-
-  // Header row
-  h += '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eeecea;">';
-  h += '<div><div style="font-size:15px;font-weight:600;">'+a.first+' '+a.last+'</div>';
-  h += '<div style="font-size:12px;color:#888;margin-top:2px;">'+email+' &middot; '+phone+(a.idnum?' &middot; ID: '+a.idnum:'')+'</div></div>';
-  h += '<div style="display:flex;align-items:center;gap:8px;">'+badge(a.status)+'<span style="font-size:11px;color:#888;">'+(a.submittedAt||'')+'</span></div>';
-  h += '</div>';
-
-  // Stats grid
-  h += '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px;">';
-  h += '<div style="background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#666;margin-bottom:3px;">Requested</div><div style="font-size:14px;font-weight:600;color:#0C447C;">'+fmt(a.amount)+'</div></div>';
-  h += '<div style="background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#666;margin-bottom:3px;">Term</div><div style="font-size:14px;font-weight:500;">'+a.term+' months</div></div>';
-  h += '<div style="background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#666;margin-bottom:3px;">Income</div><div style="font-size:14px;font-weight:500;">'+(a.income?fmt(a.income):'—')+'</div></div>';
-  h += '<div style="background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#666;margin-bottom:3px;">Employment</div><div style="font-size:12px;font-weight:500;">'+(a.employment||'—')+'</div></div>';
-  h += '</div>';
-
-  // Purpose
-  h += '<div style="font-size:12px;color:#555;background:#f7f7f5;border-radius:6px;padding:8px 10px;border:1px solid #d8d8d4;margin-bottom:12px;">';
-  h += '<strong>Purpose:</strong> '+a.purpose+(a.notes?'<br><strong>Notes:</strong> '+a.notes:'')+(a.address?'<br><strong>Address:</strong> '+a.address:'');
-  h += '</div>';
-
-  // Action area
-  if(appFilter==='pending'){
-    h += '<div style="display:flex;gap:8px;">';
-    h += '<button onclick="approveApp(\''+a.id+'\')" class="btn-sm success">&#10003; Approve</button>';
-    h += '<button onclick="rejectApp(\''+a.id+'\')" class="btn-sm danger">&#215; Reject</button>';
-    h += '</div>';
-  }
-  if(appFilter==='rejected'){
-    h += '<div style="background:#fff4f4;border:1px solid #F09595;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:#791F1F;">';
-    h += '<strong>Rejection reason:</strong> '+(a.rejectionReason||'No reason recorded');
-    h += '</div>';
-    h += '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+waBtn+' '+mailBtn+'</div>';
-  }
-  if(appFilter==='approved'){
-    h += '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+waAppBtn+' '+mailAppBtn+'</div>';
-  }
-
-  h += '</div>';
-  return h;
-}
-
 function renderApplications(){
   const list=applications.filter(a=>a.status===appFilter);
   const container=document.getElementById('applications-list');
-  if(list.length===0){
-    container.innerHTML='<div class="card-pad" style="text-align:center;color:#888;font-size:13px;padding:40px;">No '+appFilter+' applications. Click Refresh to check for new ones.</div>';
-    return;
-  }
-  container.innerHTML=list.map(a=>renderAppCard(a)).join('');
+  if(list.length===0){container.innerHTML=`<div class="card-pad" style="text-align:center;color:#888;font-size:13px;padding:40px;">No ${appFilter} applications. Click Refresh to check for new ones.</div>`;return;}
+  container.innerHTML=list.map(a=>`
+    <div class="card-pad" style="margin-bottom:12px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eeecea;">
+        <div><div style="font-size:15px;font-weight:600;">${a.first} ${a.last}</div><div style="font-size:12px;color:#888;margin-top:2px;">${a.email} &middot; ${a.phone}${a.idnum?' &middot; ID: '+a.idnum:''}</div></div>
+        <div style="display:flex;align-items:center;gap:8px;">${badge(a.status)}<span style="font-size:11px;color:#888;">${a.submittedAt||''}</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px;">
+        <div style="background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#666;margin-bottom:3px;">Requested</div><div style="font-size:14px;font-weight:600;color:#0C447C;">${fmt(a.amount)}</div></div>
+        <div style="background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#666;margin-bottom:3px;">Term</div><div style="font-size:14px;font-weight:500;">${a.term} months</div></div>
+        <div style="background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#666;margin-bottom:3px;">Income</div><div style="font-size:14px;font-weight:500;">${a.income?fmt(a.income):'—'}</div></div>
+        <div style="background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#666;margin-bottom:3px;">Employment</div><div style="font-size:12px;font-weight:500;">${a.employment||'—'}</div></div>
+      </div>
+      <div style="font-size:12px;color:#555;background:#f7f7f5;border-radius:6px;padding:8px 10px;border:1px solid #d8d8d4;margin-bottom:12px;">
+        <strong>Purpose:</strong> ${a.purpose}${a.notes?'<br><strong>Notes:</strong> '+a.notes:''}${a.address?'<br><strong>Address:</strong> '+a.address:''}
+      </div>
+      ${appFilter==='pending'?`<div style="display:flex;gap:8px;"><button onclick="approveApp('${a.id}')" class="btn-sm success">&#10003; Approve</button><button onclick="rejectApp('${a.id}')" class="btn-sm danger">&#215; Reject</button></div>`:''}
+      ${appFilter==='rejected'?`<div style="background:#fcebeb;border:1px solid #F09595;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:#791F1F;"><strong>Rejection reason:</strong> ${a.rejectionReason||'No reason recorded'}</div><div style="display:flex;gap:8px;"><button onclick="notifyCustomer('${a.id}','rejected')" class="btn-sm danger">&#128172; Notify customer</button></div>`:''}
+      ${appFilter==='approved'?`<div style="display:flex;gap:8px;"><button onclick="notifyCustomer('${a.id}','approved')" class="btn-sm success">&#128172; Notify customer</button></div>`:''}
+    </div>`).join('');
 }
-
 
 function setAppFilter(f,btn){
   appFilter=f;
@@ -820,61 +767,138 @@ function approveApp(id){
       ${fieldHtml('f-startdate','Start date','date','')}
     </div>
     <div id="loan-preview" style="margin-top:12px;"></div>
-    ${mftr('closeModal()',`saveApprovedLoan('${borrowerId}')`, 'Create loan')}`);
+    ${mftr('closeModal()',`saveApprovedLoan('${borrowerId}','${id}')`, 'Create loan &amp; notify')}`);
   document.getElementById('f-startdate').value=todayStr();
   ['f-principal','f-rate','f-term','f-reptype'].forEach(id=>document.getElementById(id).addEventListener('input',previewLoan));
   previewLoan();
 }
 
-function saveApprovedLoan(borrowerId){
+function saveApprovedLoan(borrowerId,appId){
   const principal=+document.getElementById('f-principal').value,rate=+document.getElementById('f-rate').value,term=+document.getElementById('f-term').value,reptype=document.getElementById('f-reptype').value,startDate=document.getElementById('f-startdate').value;
   if(!principal||!rate||!term||!startDate){document.getElementById('loan-alert').innerHTML=alertBox('Please fill in all required fields.');return;}
+  const{monthly}=calcLoan(principal,rate,term,reptype);
   loans.push({id:uid(),borrowerId,principal,rate,term,reptype,startDate,notes:'From online application',createdAt:todayStr()});
-  persist();closeModal();renderDashboard();
+  persist();renderDashboard();
+  const a=applications.find(x=>x.id===appId);
+  if(a){showNotifyModal(a,'approved',{principal,rate,term,monthly,startDate});}
+  else{closeModal();}
 }
 
-// pending action id — avoids passing id through onclick attributes
-let _rid = '';
+// ── Global to avoid quote-escaping issues in onclick ──
+let _pendingActionId = '';
 
 function rejectApp(id){
-  _rid = id;
-  const a = applications.find(x=>x.id===id); if(!a) return;
-  openModal(
-    mhdr('Reject application') +
-    '<div style="background:#fcebeb;border:1px solid #F09595;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#791F1F;">' +
-    'Rejecting <strong>' + a.first + ' ' + a.last + '</strong> &mdash; ' + fmt(a.amount) +
-    '</div>' +
-    '<div class="field" style="margin-bottom:14px;">' +
-    '<label style="font-size:12px;font-weight:500;color:#555;">Rejection reason <span style="color:#aaa;font-weight:400;">(optional — shown on card &amp; included in message)</span></label>' +
-    '<textarea id="rej-rsn" style="width:100%;margin-top:6px;padding:8px 10px;border:1px solid #c8c8c4;border-radius:8px;font-size:13px;min-height:80px;font-family:inherit;resize:vertical;" placeholder="e.g. Insufficient income, incomplete documentation..."></textarea>' +
-    '</div>' +
-    '<div class="modal-ftr">' +
-    '<button onclick="closeModal()" class="btn-ghost">Cancel</button>' +
-    '<button onclick="doReject()" style="padding:8px 18px;background:#E24B4A;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;">Reject</button>' +
-    '</div>'
-  );
+  _pendingActionId = id;
+  const a = applications.find(x=>x.id===id); if(!a)return;
+  openModal(mhdr('Reject application')+
+    '<div style="background:#fcebeb;border:1px solid #F09595;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#791F1F;">'+
+    'Rejecting application from <strong>'+a.first+' '+a.last+'</strong> for <strong>'+fmt(a.amount)+'</strong>.'+
+    '</div>'+
+    '<div class="field" style="margin-bottom:14px;">'+
+    '<label style="font-size:12px;font-weight:500;color:#555;">Rejection reason <span style="color:#aaa;font-weight:400;">(optional — sent to customer)</span></label>'+
+    '<textarea id="reject-reason" style="width:100%;margin-top:6px;padding:8px 10px;border:1px solid #c8c8c4;border-radius:8px;font-size:13px;min-height:80px;font-family:inherit;resize:vertical;" placeholder="e.g. Insufficient income, incomplete documentation, existing debt obligations..."></textarea>'+
+    '</div>'+
+    '<div class="modal-ftr">'+
+    '<button onclick="closeModal()" class="btn-ghost">Cancel</button>'+
+    '<button onclick="confirmReject()" style="padding:8px 18px;background:#E24B4A;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;">Reject</button>'+
+    '</div>');
 }
 
-function doReject(){
-  const id = _rid; if(!id) return;
-  const a  = applications.find(x=>x.id===id); if(!a) return;
+function confirmReject(){
+  const id = _pendingActionId; if(!id)return;
+  const a = applications.find(x=>x.id===id); if(!a)return;
+  const reason = (document.getElementById('reject-reason').value||'').trim();
   a.status = 'rejected';
-  a.rejectionReason = (document.getElementById('rej-rsn').value||'').trim();
-  persist();
-  closeModal();
-  updateAppBadge();
-  renderApplications();
-  updateSheetStatus(id, 'rejected');
+  a.rejectionReason = reason;
+  persist(); updateAppBadge(); renderApplications();
+  updateSheetStatus(id,'rejected');
+  showNotifyModal(a,'rejected',null);
 }
 
-// helper — builds a wa.me URL safely
-function waLink(phone, text){
-  let n = (phone||'').replace(/[\s\-().+]/g,'');
-  if(n.startsWith('0')) n = '27' + n.slice(1);
-  return 'https://wa.me/' + n + '?text=' + encodeURIComponent(text);
+function notifyCustomer(id, decision){
+  _pendingActionId = id;
+  const a = applications.find(x=>x.id===id); if(!a)return;
+  showNotifyModal(a, decision, null);
 }
 
+function fmtWAPhone(raw){
+  let n=(raw||'').replace(/[\s\-().]/g,'');
+  if(n.startsWith('+'))n=n.slice(1);
+  if(n.startsWith('0'))n='27'+n.slice(1);
+  if(!n.startsWith('27'))n='27'+n;
+  return n;
+}
 
+function showNotifyModal(a, decision, loan){
+  const ok = decision==='approved';
+  const col = ok?'#27500A':'#791F1F';
+  const bg  = ok?'#eaf3de':'#fcebeb';
+  const bc  = ok?'#97C459':'#F09595';
+  const name = a.first||'';
+  const fullname = (a.first||'')+' '+(a.last||'');
+  const amt = 'R'+Number(a.amount||0).toLocaleString();
+  const reason = a.rejectionReason||'';
+
+  let waMsg, mailSubj, mailBody;
+  if(ok && loan){
+    const p  = 'R'+Number(loan.principal||0).toLocaleString();
+    const mo = 'R'+Number(loan.monthly||0).toFixed(2);
+    const info = 'Amount: '+p+'\nTerm: '+loan.term+' months\nRate: '+loan.rate+'% per month\nMonthly payment: '+mo+'\nStart date: '+(loan.startDate||'');
+    waMsg    = 'Hi '+name+', great news!\n\nYour loan application with Incredible Lending has been *APPROVED*.\n\n'+info+'\n\nWe will contact you shortly. Thank you for choosing Incredible Lending!';
+    mailSubj = 'Your Loan Application - Approved';
+    mailBody = 'Hi '+name+',\n\nGreat news! Your loan application has been approved.\n\n'+info+'\n\nWe will be in touch shortly.\n\nKind regards,\nIncredible Lending';
+  } else if(ok){
+    waMsg    = 'Hi '+name+', great news!\n\nYour loan application with Incredible Lending has been *APPROVED*.\n\nWe will contact you shortly with the loan details. Thank you for choosing Incredible Lending!';
+    mailSubj = 'Your Loan Application - Approved';
+    mailBody = 'Hi '+name+',\n\nGreat news! Your loan application has been approved.\n\nWe will be in touch shortly with the full loan details.\n\nKind regards,\nIncredible Lending';
+  } else {
+    waMsg    = 'Hi '+name+',\n\nThank you for your loan application with Incredible Lending.\n\nUnfortunately your application for '+amt+' could not be approved at this time.'+(reason?'\n\nReason: '+reason:'')+'\n\nFeel free to contact us if you have any questions.';
+    mailSubj = 'Your Loan Application - Update';
+    mailBody = 'Hi '+name+',\n\nThank you for applying with Incredible Lending.\n\nAfter reviewing your application for '+amt+', we are unable to proceed at this time.'+(reason?'\n\nReason: '+reason:'')+'\n\nPlease do not hesitate to contact us if you have any questions.\n\nKind regards,\nIncredible Lending';
+  }
+
+  const waNum   = fmtWAPhone(a.phone||'');
+  const hasWA   = waNum.length >= 11;
+  const hasEmail= !!(a.email && a.email.includes('@'));
+
+  // Store URLs on window — onclick functions below read from here, no quoting needed
+  window._waUrl   = hasWA    ? 'https://wa.me/'+waNum+'?text='+encodeURIComponent(waMsg) : '';
+  window._mailUrl = hasEmail ? 'mailto:'+(a.email||'')+'?subject='+encodeURIComponent(mailSubj)+'&body='+encodeURIComponent(mailBody) : '';
+
+  let h = mhdr('Notify customer');
+  h += '<div style="background:'+bg+';border:1px solid '+bc+';border-radius:8px;padding:11px 14px;margin-bottom:16px;font-size:13px;color:'+col+';font-weight:600;">'+(ok?'&#10003; Approved':'&#215; Rejected')+' &mdash; '+fullname+', '+amt+'</div>';
+  if(!ok && reason){
+    h += '<div style="background:#fff8f8;border:1px solid #F09595;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#791F1F;"><strong>Rejection reason:</strong> '+reason+'</div>';
+  }
+  h += '<p style="font-size:13px;color:#555;margin-bottom:12px;">Choose how to notify <strong>'+name+'</strong>:</p>';
+  h += '<div style="display:flex;flex-direction:column;gap:10px;">';
+  if(hasWA){
+    h += '<button onclick="openWA()" style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:#25D366;color:#fff;border-radius:10px;font-size:14px;font-weight:600;border:none;cursor:pointer;width:100%;text-align:left;font-family:inherit;">';
+    h += '<span style="font-size:22px;">&#128172;</span><div><div>Send WhatsApp</div><div style="font-size:11px;font-weight:400;opacity:0.85;">'+(a.phone||'')+'</div></div></button>';
+  } else {
+    h += '<div style="padding:10px;background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;font-size:12px;color:#888;">No phone number on file</div>';
+  }
+  if(hasEmail){
+    h += '<button onclick="openMail()" style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:#378ADD;color:#fff;border-radius:10px;font-size:14px;font-weight:600;border:none;cursor:pointer;width:100%;text-align:left;font-family:inherit;">';
+    h += '<span style="font-size:22px;">&#9993;</span><div><div>Send Email</div><div style="font-size:11px;font-weight:400;opacity:0.85;">'+(a.email||'')+'</div></div></button>';
+  } else {
+    h += '<div style="padding:10px;background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;font-size:12px;color:#888;">No email address on file</div>';
+  }
+  h += '</div>';
+  h += '<div style="margin-top:14px;padding:10px 12px;background:#f7f7f5;border-radius:8px;border:1px solid #d8d8d4;font-size:12px;color:#555;line-height:1.5;white-space:pre-wrap;">'+waMsg.replace(/\*/g,'')+'</div>';
+  h += '<div class="modal-ftr"><button onclick="closeModal()" class="btn-ghost">Done</button></div>';
+  openModal(h);
+}
+
+function openWA(){
+  const url = window._waUrl; if(!url)return;
+  const w = window.open(url,'_blank','noopener,noreferrer');
+  if(!w||w.closed||typeof w.closed==='undefined'){ window.location.href=url; }
+}
+function openMail(){
+  const url = window._mailUrl; if(!url)return;
+  window.location.href = url;
+}
 
 function renderLoans(){
   const list=loans.filter(l=>loanFilter==='all'||getStatus(l)===loanFilter);
