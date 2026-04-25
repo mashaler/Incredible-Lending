@@ -660,9 +660,14 @@ function updateAppBadge(){
 
 async function fetchFromSheets(){
   if(!GOOGLE_SCRIPT_URL)return false;
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),10000);
   try{
-    const res=await fetch(GOOGLE_SCRIPT_URL,{method:'GET',redirect:'follow'});
-    const remoteApps=await res.json();
+    const res=await fetch(GOOGLE_SCRIPT_URL,{method:'GET',redirect:'follow',signal:controller.signal});
+    clearTimeout(timer);
+    const text=await res.text();
+    let remoteApps;
+    try{remoteApps=JSON.parse(text);}catch(e){return false;}
     if(!Array.isArray(remoteApps))return false;
     let newCount=0;
     remoteApps.forEach(remote=>{
@@ -672,7 +677,7 @@ async function fetchFromSheets(){
     });
     if(newCount>0)persist();
     return newCount;
-  }catch(e){return false;}
+  }catch(e){clearTimeout(timer);return false;}
 }
 
 async function refreshApps(){
@@ -731,7 +736,7 @@ function buildNotifyButtons(a, decision){
   } else {
     waMsg    = 'Hi '+name+',\n\nThank you for your loan application with Incredible Lending.\n\nUnfortunately your application for '+amt+' could not be approved at this time.'+(reason?'\n\nReason: '+reason:'')+'\n\nFeel free to contact us if you have any questions.';
     mailSubj = 'Your Loan Application - Update';
-    mailBody = 'Hi '+name+',\n\nThank you for applying with Incredible Lending.\n\nAfter reviewing your application for '+amt+', we are unable to proceed at this time.'+(reason?'\n\nReason: '+reason:'')+"\n\nPlease do not hesitate to contact us if you have any questions.\n\nKind regards,\nIncredible Lending";
+    mailBody = 'Hi '+name+',\n\nThank you for applying with Incredible Lending.\n\nAfter reviewing your application for '+amt+', we are unable to proceed at this time.'+(reason?'\n\nReason: '+reason:'')+'\n\nPlease do not hesitate to contact us if you have any questions.\n\nKind regards,\nIncredible Lending';
   }
   const waNum  = fmtWAPhone(a.phone||'');
   const hasWA  = waNum.length >= 11;
