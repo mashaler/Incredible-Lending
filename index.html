@@ -779,7 +779,7 @@ function saveApprovedLoan(borrowerId,appId){
   persist();renderDashboard();
   closeModal();
   const a=applications.find(x=>x.id===appId);
-  if(a){setTimeout(()=>showNotifyModal(a,'approved',{principal,rate,term,monthly,startDate}),80);}
+  if(a){showNotifyModal(a,'approved',{principal,rate,term,monthly,startDate});}
 
 }
 
@@ -807,7 +807,7 @@ function confirmReject(id){
   persist();updateAppBadge();renderApplications();
   updateSheetStatus(id,'rejected');
   closeModal();
-  setTimeout(()=>showNotifyModal(a,'rejected',null),80);
+  showNotifyModal(a,'rejected',null);
 }
 
 // ── Phone normaliser (ZA: 0xx → +27xx) ──
@@ -1115,6 +1115,7 @@ function load(silent=false){
 
 document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('modal-wrap').addEventListener('click',function(e){if(e.target===this)closeModal();});
+  document.querySelector('.modal-box').addEventListener('click',function(e){e.stopPropagation();});
   initAuth();
 });
 </script>
