@@ -734,55 +734,16 @@ function buildNotifyLinks(a){
     let details='';
     if(loan){
       const {monthly}=calcLoan(loan.principal,loan.rate,loan.term,loan.reptype);
-      details='Loan details:
-Amount: R'+Number(loan.principal).toLocaleString()+'
-Term: '+loan.term+' months
-Rate: '+loan.rate+'% per month
-Monthly payment: R'+Number(monthly).toFixed(2)+'
-Start date: '+loan.startDate;
+      details='Loan details:\nAmount: R'+Number(loan.principal).toLocaleString()+'\nTerm: '+loan.term+' months\nRate: '+loan.rate+'% per month\nMonthly payment: R'+Number(monthly).toFixed(2)+'\nStart date: '+loan.startDate;
     }
-    waMsg    = 'Hi '+name+', great news!
-
-Your loan application with Incredible Lending has been *APPROVED*.
-
-'+details+'
-
-We will contact you shortly. Thank you for choosing Incredible Lending!';
+    waMsg    = 'Hi '+name+', great news!\n\nYour loan application with Incredible Lending has been *APPROVED*.\n\n'+details+'\n\nWe will contact you shortly. Thank you for choosing Incredible Lending!';
     mailSubj = 'Your Loan Application - Approved';
-    mailBody = 'Hi '+name+',
-
-Great news! Your loan application has been approved.
-
-'+details+'
-
-We will be in touch shortly.
-
-Kind regards,
-Incredible Lending';
+    mailBody = 'Hi '+name+',\n\nGreat news! Your loan application has been approved.\n\n'+details+'\n\nWe will be in touch shortly.\n\nKind regards,\nIncredible Lending';
   } else {
     const reason = a.rejectionReason||'';
-    waMsg    = 'Hi '+name+',
-
-Thank you for your loan application with Incredible Lending.
-
-Unfortunately your application for '+amt+' could not be approved at this time.'+(reason?'
-
-Reason: '+reason:'')+'
-
-Feel free to contact us if you have any questions.';
+    waMsg    = 'Hi '+name+',\n\nThank you for your loan application with Incredible Lending.\n\nUnfortunately your application for '+amt+' could not be approved at this time.'+(reason?'\n\nReason: '+reason:'')+'\n\nFeel free to contact us if you have any questions.';
     mailSubj = 'Your Loan Application - Update';
-    mailBody = 'Hi '+name+',
-
-Thank you for applying with Incredible Lending.
-
-After reviewing your application for '+amt+', we are unable to proceed at this time.'+(reason?'
-
-Reason: '+reason:'')+'
-
-Please do not hesitate to reach out if you have any questions.
-
-Kind regards,
-Incredible Lending';
+    mailBody = 'Hi '+name+',\n\nThank you for applying with Incredible Lending.\n\nAfter reviewing your application for '+amt+', we are unable to proceed at this time.'+(reason?'\n\nReason: '+reason:'')+'\n\nPlease do not hesitate to reach out if you have any questions.\n\nKind regards,\nIncredible Lending';
   }
   let waNum=(a.phone||'').replace(/[\s\-().]/g,'');
   if(waNum.startsWith('+'))waNum=waNum.slice(1);
