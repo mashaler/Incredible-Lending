@@ -724,6 +724,83 @@ function renderDashboard(){
     return`<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span style="font-weight:500;">${b?b.first+' '+b.last:'?'}</span><span style="color:#888;">${fmtD(bal)} left</span></div><div style="height:7px;background:#e8e8e4;border-radius:4px;overflow:hidden;border:1px solid #d8d8d4;"><div style="height:100%;width:${pct}%;background:#378ADD;border-radius:4px;"></div></div><div style="font-size:11px;color:#888;margin-top:3px;">${pct}% repaid</div></div>`;}).join('');
 }
 
+function buildNotifyLinks(a){
+  const name = a.first||'';
+  const amt  = 'R'+Number(a.amount||0).toLocaleString();
+  const status = a.status;
+  let waMsg, mailSubj, mailBody;
+  if(status==='approved'){
+    const loan = loans.find(l=>l.borrowerId===(borrowers.find(b=>b.first===a.first&&b.last===a.last&&b.phone===a.phone)||{}).id);
+    let details='';
+    if(loan){
+      const {monthly}=calcLoan(loan.principal,loan.rate,loan.term,loan.reptype);
+      details='Loan details:
+Amount: R'+Number(loan.principal).toLocaleString()+'
+Term: '+loan.term+' months
+Rate: '+loan.rate+'% per month
+Monthly payment: R'+Number(monthly).toFixed(2)+'
+Start date: '+loan.startDate;
+    }
+    waMsg    = 'Hi '+name+', great news!
+
+Your loan application with Incredible Lending has been *APPROVED*.
+
+'+details+'
+
+We will contact you shortly. Thank you for choosing Incredible Lending!';
+    mailSubj = 'Your Loan Application - Approved';
+    mailBody = 'Hi '+name+',
+
+Great news! Your loan application has been approved.
+
+'+details+'
+
+We will be in touch shortly.
+
+Kind regards,
+Incredible Lending';
+  } else {
+    const reason = a.rejectionReason||'';
+    waMsg    = 'Hi '+name+',
+
+Thank you for your loan application with Incredible Lending.
+
+Unfortunately your application for '+amt+' could not be approved at this time.'+(reason?'
+
+Reason: '+reason:'')+'
+
+Feel free to contact us if you have any questions.';
+    mailSubj = 'Your Loan Application - Update';
+    mailBody = 'Hi '+name+',
+
+Thank you for applying with Incredible Lending.
+
+After reviewing your application for '+amt+', we are unable to proceed at this time.'+(reason?'
+
+Reason: '+reason:'')+'
+
+Please do not hesitate to reach out if you have any questions.
+
+Kind regards,
+Incredible Lending';
+  }
+  let waNum=(a.phone||'').replace(/[\s\-().]/g,'');
+  if(waNum.startsWith('+'))waNum=waNum.slice(1);
+  if(waNum.startsWith('0'))waNum='27'+waNum.slice(1);
+  if(!waNum.startsWith('27'))waNum='27'+waNum;
+  const hasWA=waNum.length>=11&&a.phone;
+  const hasEmail=!!(a.email&&a.email.includes('@'));
+  const waHref='https://wa.me/'+waNum+'?text='+encodeURIComponent(waMsg);
+  const mailHref='mailto:'+a.email+'?subject='+encodeURIComponent(mailSubj)+'&body='+encodeURIComponent(mailBody);
+  let out='<div style="margin-top:12px;padding-top:12px;border-top:1px solid #eeecea;"><div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Notify customer</div><div style="display:flex;gap:8px;flex-wrap:wrap;">';
+  if(hasWA) out+='<a href="'+waHref+'" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:7px;padding:8px 14px;background:#25D366;color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">💬 WhatsApp &nbsp;<span style="font-weight:400;font-size:11px;opacity:0.85;">'+a.phone+'</span></a>';
+  else out+='<span style="font-size:12px;color:#aaa;">No phone number</span>';
+  if(hasEmail) out+='<a href="'+mailHref+'" style="display:inline-flex;align-items:center;gap:7px;padding:8px 14px;background:#378ADD;color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">✉️ Email &nbsp;<span style="font-weight:400;font-size:11px;opacity:0.85;">'+a.email+'</span></a>';
+  else out+='<span style="font-size:12px;color:#aaa;">No email</span>';
+  out+='</div></div>';
+  return out;
+}
+
 function renderApplications(){
   const list=applications.filter(a=>a.status===appFilter);
   const container=document.getElementById('applications-list');
@@ -740,10 +817,13 @@ function renderApplications(){
         <div style="background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#666;margin-bottom:3px;">Income</div><div style="font-size:14px;font-weight:500;">${a.income?fmt(a.income):'—'}</div></div>
         <div style="background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#666;margin-bottom:3px;">Employment</div><div style="font-size:12px;font-weight:500;">${a.employment||'—'}</div></div>
       </div>
-      <div style="font-size:12px;color:#555;background:#f7f7f5;border-radius:6px;padding:8px 10px;border:1px solid #d8d8d4;margin-bottom:${appFilter==='pending'?'12px':'0'};">
+      <div style="font-size:12px;color:#555;background:#f7f7f5;border-radius:6px;padding:8px 10px;border:1px solid #d8d8d4;margin-bottom:12px;">
         <strong>Purpose:</strong> ${a.purpose}${a.notes?'<br><strong>Notes:</strong> '+a.notes:''}${a.address?'<br><strong>Address:</strong> '+a.address:''}
       </div>
-      ${appFilter==='pending'?`<div style="display:flex;gap:8px;"><button onclick="approveApp('${a.id}')" class="btn-sm success">&#10003; Approve</button><button onclick="rejectApp('${a.id}')" class="btn-sm danger">&#215; Reject</button></div>`:''}
+      ${appFilter==='pending'
+        ?'<div style="display:flex;gap:8px;"><button onclick="approveApp('' +a.id+ ''" class="btn-sm success">&#10003; Approve</button><button onclick="rejectApp('' +a.id+ ''" class="btn-sm danger">&#215; Reject</button></div>'
+        :buildNotifyLinks(a)
+      }
     </div>`).join('');
 }
 
