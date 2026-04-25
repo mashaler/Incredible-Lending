@@ -750,12 +750,25 @@ function setAppFilter(f,btn){
 // ─────────────────────────────────────────────────────────────
 //  CUSTOMER NOTIFICATIONS  (WhatsApp + Email)
 // ─────────────────────────────────────────────────────────────
+let _notify={};   // holds current notification payload
+
 function fmtWAPhone(raw){
-  // Normalise to international digits only (handles +27 / 0xx South-African numbers)
   let n=(raw||'').replace(/[\s\-().+]/g,'');
   if(n.startsWith('0'))n='27'+n.slice(1);
   if(!n.startsWith('27')&&n.length<=10)n='27'+n;
   return n;
+}
+
+function sendWANotify(){
+  if(!_notify.waNum||!_notify.waMsg)return;
+  window.open('https://wa.me/'+_notify.waNum+'?text='+encodeURIComponent(_notify.waMsg),'_blank');
+}
+
+function sendEmailNotify(){
+  if(!_notify.email)return;
+  window.location.href='mailto:'+_notify.email
+    +'?subject='+encodeURIComponent(_notify.mailSubj)
+    +'&body='+encodeURIComponent(_notify.mailBody);
 }
 
 function showNotifyModal(a,decision,loanInfo){
@@ -765,38 +778,42 @@ function showNotifyModal(a,decision,loanInfo){
   const bc=approved?'#97C459':'#F09595';
   const icon=approved?'✓':'✕';
 
-  // ── WhatsApp message ──
-  const waMsg=approved
-    ?`Hi ${a.first}, great news! 🎉 Your loan application with Incredible Lending has been *APPROVED*.\n\n*Loan details:*\n• Amount: R${(+loanInfo.principal).toLocaleString()}\n• Term: ${loanInfo.term} months\n• Rate: ${loanInfo.rate}% per month\n• Monthly payment: R${(+(loanInfo.monthly||0)).toFixed(2)}\n• Start date: ${loanInfo.startDate||''}\n\nWe will contact you shortly with next steps. Thank you for choosing Incredible Lending!`
-    :`Hi ${a.first}, thank you for your loan application with Incredible Lending.\n\nAfter careful review we regret that your application for *R${(+a.amount).toLocaleString()}* could not be approved at this time.${a.rejectionReason?'\n\nReason: '+a.rejectionReason:''}\n\nFeel free to contact us if you have any questions. We appreciate your interest in Incredible Lending.`;
+  _notify.waMsg=approved
+    ?'Hi '+a.first+', great news! Your loan application with Incredible Lending has been *APPROVED*.\n\n*Loan details:*\n- Amount: R'+Number(loanInfo.principal).toLocaleString()+'\n- Term: '+loanInfo.term+' months\n- Rate: '+loanInfo.rate+'% per month\n- Monthly payment: R'+Number(loanInfo.monthly||0).toFixed(2)+'\n- Start date: '+(loanInfo.startDate||'')+'\n\nWe will contact you shortly with next steps. Thank you for choosing Incredible Lending!'
+    :'Hi '+a.first+', thank you for your loan application with Incredible Lending.\n\nAfter careful review we regret that your application for R'+Number(a.amount).toLocaleString()+' could not be approved at this time.'+(a.rejectionReason?'\n\nReason: '+a.rejectionReason:'')+'\n\nFeel free to contact us if you have any questions.';
 
-  // ── Email ──
-  const mailSubj=approved?'Your loan application — Approved ✓':'Your loan application — Update';
-  const mailBody=approved
-    ?`Hi ${a.first},\n\nGreat news! Your loan application has been approved.\n\nLoan details:\n  Amount: R${(+loanInfo.principal).toLocaleString()}\n  Term: ${loanInfo.term} months\n  Interest rate: ${loanInfo.rate}% per month\n  Monthly payment: R${(+(loanInfo.monthly||0)).toFixed(2)}\n  Start date: ${loanInfo.startDate||''}\n\nWe will be in touch shortly.\n\nKind regards,\nIncredible Lending`
-    :`Hi ${a.first},\n\nThank you for applying with Incredible Lending.\n\nAfter reviewing your application for R${(+a.amount).toLocaleString()}, we are unfortunately unable to proceed at this time.${a.rejectionReason?'\n\nReason: '+a.rejectionReason:''}\n\nPlease don't hesitate to reach out if you have any questions.\n\nKind regards,\nIncredible Lending`;
+  _notify.mailSubj=approved?'Your loan application — Approved':'Your loan application — Update';
+  _notify.mailBody=approved
+    ?'Hi '+a.first+',\n\nGreat news! Your loan application has been approved.\n\nLoan details:\n  Amount: R'+Number(loanInfo.principal).toLocaleString()+'\n  Term: '+loanInfo.term+' months\n  Rate: '+loanInfo.rate+'% per month\n  Monthly payment: R'+Number(loanInfo.monthly||0).toFixed(2)+'\n  Start date: '+(loanInfo.startDate||'')+'\n\nWe will be in touch shortly.\n\nKind regards,\nIncredible Lending'
+    :'Hi '+a.first+',\n\nThank you for applying with Incredible Lending.\n\nAfter reviewing your application for R'+Number(a.amount).toLocaleString()+', we are unfortunately unable to proceed at this time.'+(a.rejectionReason?'\n\nReason: '+a.rejectionReason:'')+'\n\nPlease don\'t hesitate to reach out if you have any questions.\n\nKind regards,\nIncredible Lending';
 
-  const waNum=fmtWAPhone(a.phone||'');
-  const hasWA=waNum.length>=10;
-  const hasEmail=!!(a.email&&a.email.includes('@'));
+  _notify.waNum=fmtWAPhone(a.phone||'');
+  _notify.email=a.email||'';
 
-  openModal(mhdr('Notify customer')+`
-    <div style="background:${bg};border:1px solid ${bc};border-radius:8px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
-      <span style="font-size:22px;color:${col};font-weight:700;">${icon}</span>
-      <div style="font-size:13px;color:${col};">Application <strong>${decision}</strong> — ${a.first} ${a.last}, ${fmt(a.amount)}</div>
-    </div>
-    <div style="font-size:13px;color:#555;margin-bottom:14px;">Choose how to notify the customer:</div>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      ${hasWA?`<button onclick="window.open('https://wa.me/${waNum}?text='+encodeURIComponent(${JSON.stringify(waMsg)}),'_blank')" style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:#25D366;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;text-align:left;">
-        <span style="font-size:22px;line-height:1;">💬</span>
-        <div><div>Send WhatsApp</div><div style="font-size:11px;font-weight:400;opacity:0.85;">${a.phone}</div></div>
-      </button>`:'<div style="padding:10px;background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;font-size:12px;color:#888;">No phone number — WhatsApp unavailable</div>'}
-      ${hasEmail?`<a href="mailto:${a.email}?subject=${encodeURIComponent(mailSubj)}&body=${encodeURIComponent(mailBody)}" style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:#378ADD;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;text-decoration:none;">
-        <span style="font-size:22px;line-height:1;">✉️</span>
-        <div><div>Send Email</div><div style="font-size:11px;font-weight:400;opacity:0.85;">${a.email}</div></div>
-      </a>`:'<div style="padding:10px;background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;font-size:12px;color:#888;">No email address — email unavailable</div>'}
-    </div>
-    <div class="modal-ftr"><button onclick="closeModal()" class="btn-ghost">Done</button></div>`);
+  const hasWA=_notify.waNum.length>=10;
+  const hasEmail=!!(_notify.email&&_notify.email.includes('@'));
+
+  openModal(mhdr('Notify customer')+
+    '<div style="background:'+bg+';border:1px solid '+bc+';border-radius:8px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">'+
+      '<span style="font-size:22px;color:'+col+';font-weight:700;">'+icon+'</span>'+
+      '<div style="font-size:13px;color:'+col+';">Application <strong>'+decision+'</strong> — '+a.first+' '+a.last+', '+fmt(a.amount)+'</div>'+
+    '</div>'+
+    '<div style="font-size:13px;color:#555;margin-bottom:14px;">Choose how to notify the customer:</div>'+
+    '<div style="display:flex;flex-direction:column;gap:10px;">'+
+      (hasWA
+        ?'<button onclick="sendWANotify()" style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:#25D366;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;text-align:left;">'+
+            '<span style="font-size:22px;line-height:1;">&#x1F4AC;</span>'+
+            '<div><div>Send WhatsApp</div><div style="font-size:11px;font-weight:400;opacity:0.85;">'+(a.phone||'')+'</div></div>'+
+          '</button>'
+        :'<div style="padding:10px;background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;font-size:12px;color:#888;">No phone number — WhatsApp unavailable</div>')+
+      (hasEmail
+        ?'<button onclick="sendEmailNotify()" style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:#378ADD;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;text-align:left;">'+
+            '<span style="font-size:22px;line-height:1;">&#x2709;&#xFE0F;</span>'+
+            '<div><div>Send Email</div><div style="font-size:11px;font-weight:400;opacity:0.85;">'+_notify.email+'</div></div>'+
+          '</button>'
+        :'<div style="padding:10px;background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;font-size:12px;color:#888;">No email address — email unavailable</div>')+
+    '</div>'+
+    '<div class="modal-ftr"><button onclick="closeModal()" class="btn-ghost">Done</button></div>');
 }
 
 function approveApp(id){
