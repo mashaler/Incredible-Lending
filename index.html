@@ -747,6 +747,58 @@ function setAppFilter(f,btn){
   btn.classList.add('active');renderApplications();
 }
 
+// ─────────────────────────────────────────────────────────────
+//  CUSTOMER NOTIFICATIONS  (WhatsApp + Email)
+// ─────────────────────────────────────────────────────────────
+function fmtWAPhone(raw){
+  // Normalise to international digits only (handles +27 / 0xx South-African numbers)
+  let n=(raw||'').replace(/[\s\-().+]/g,'');
+  if(n.startsWith('0'))n='27'+n.slice(1);
+  if(!n.startsWith('27')&&n.length<=10)n='27'+n;
+  return n;
+}
+
+function showNotifyModal(a,decision,loanInfo){
+  const approved=decision==='approved';
+  const col=approved?'#27500A':'#791F1F';
+  const bg=approved?'#eaf3de':'#fcebeb';
+  const bc=approved?'#97C459':'#F09595';
+  const icon=approved?'✓':'✕';
+
+  // ── WhatsApp message ──
+  const waMsg=approved
+    ?`Hi ${a.first}, great news! 🎉 Your loan application with Incredible Lending has been *APPROVED*.\n\n*Loan details:*\n• Amount: R${(+loanInfo.principal).toLocaleString()}\n• Term: ${loanInfo.term} months\n• Rate: ${loanInfo.rate}% per month\n• Monthly payment: R${(+(loanInfo.monthly||0)).toFixed(2)}\n• Start date: ${loanInfo.startDate||''}\n\nWe will contact you shortly with next steps. Thank you for choosing Incredible Lending!`
+    :`Hi ${a.first}, thank you for your loan application with Incredible Lending.\n\nAfter careful review we regret that your application for *R${(+a.amount).toLocaleString()}* could not be approved at this time.${a.rejectionReason?'\n\nReason: '+a.rejectionReason:''}\n\nFeel free to contact us if you have any questions. We appreciate your interest in Incredible Lending.`;
+
+  // ── Email ──
+  const mailSubj=approved?'Your loan application — Approved ✓':'Your loan application — Update';
+  const mailBody=approved
+    ?`Hi ${a.first},\n\nGreat news! Your loan application has been approved.\n\nLoan details:\n  Amount: R${(+loanInfo.principal).toLocaleString()}\n  Term: ${loanInfo.term} months\n  Interest rate: ${loanInfo.rate}% per month\n  Monthly payment: R${(+(loanInfo.monthly||0)).toFixed(2)}\n  Start date: ${loanInfo.startDate||''}\n\nWe will be in touch shortly.\n\nKind regards,\nIncredible Lending`
+    :`Hi ${a.first},\n\nThank you for applying with Incredible Lending.\n\nAfter reviewing your application for R${(+a.amount).toLocaleString()}, we are unfortunately unable to proceed at this time.${a.rejectionReason?'\n\nReason: '+a.rejectionReason:''}\n\nPlease don't hesitate to reach out if you have any questions.\n\nKind regards,\nIncredible Lending`;
+
+  const waNum=fmtWAPhone(a.phone||'');
+  const hasWA=waNum.length>=10;
+  const hasEmail=!!(a.email&&a.email.includes('@'));
+
+  openModal(mhdr('Notify customer')+`
+    <div style="background:${bg};border:1px solid ${bc};border-radius:8px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:22px;color:${col};font-weight:700;">${icon}</span>
+      <div style="font-size:13px;color:${col};">Application <strong>${decision}</strong> — ${a.first} ${a.last}, ${fmt(a.amount)}</div>
+    </div>
+    <div style="font-size:13px;color:#555;margin-bottom:14px;">Choose how to notify the customer:</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      ${hasWA?`<button onclick="window.open('https://wa.me/${waNum}?text='+encodeURIComponent(${JSON.stringify(waMsg)}),'_blank')" style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:#25D366;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;text-align:left;">
+        <span style="font-size:22px;line-height:1;">💬</span>
+        <div><div>Send WhatsApp</div><div style="font-size:11px;font-weight:400;opacity:0.85;">${a.phone}</div></div>
+      </button>`:'<div style="padding:10px;background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;font-size:12px;color:#888;">No phone number — WhatsApp unavailable</div>'}
+      ${hasEmail?`<a href="mailto:${a.email}?subject=${encodeURIComponent(mailSubj)}&body=${encodeURIComponent(mailBody)}" style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:#378ADD;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;text-decoration:none;">
+        <span style="font-size:22px;line-height:1;">✉️</span>
+        <div><div>Send Email</div><div style="font-size:11px;font-weight:400;opacity:0.85;">${a.email}</div></div>
+      </a>`:'<div style="padding:10px;background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;font-size:12px;color:#888;">No email address — email unavailable</div>'}
+    </div>
+    <div class="modal-ftr"><button onclick="closeModal()" class="btn-ghost">Done</button></div>`);
+}
+
 function approveApp(id){
   const a=applications.find(x=>x.id===id);if(!a)return;
   const existing=borrowers.find(b=>b.phone===a.phone&&b.first===a.first&&b.last===a.last);
@@ -765,24 +817,48 @@ function approveApp(id){
       ${fieldHtml('f-startdate','Start date','date','')}
     </div>
     <div id="loan-preview" style="margin-top:12px;"></div>
-    ${mftr('closeModal()',`saveApprovedLoan('${borrowerId}')`, 'Create loan')}`);
+    ${mftr('closeModal()',`saveApprovedLoan('${borrowerId}','${id}')`, 'Create loan & notify')}`);
   document.getElementById('f-startdate').value=todayStr();
   ['f-principal','f-rate','f-term','f-reptype'].forEach(id=>document.getElementById(id).addEventListener('input',previewLoan));
   previewLoan();
 }
 
-function saveApprovedLoan(borrowerId){
+function saveApprovedLoan(borrowerId,appId){
   const principal=+document.getElementById('f-principal').value,rate=+document.getElementById('f-rate').value,term=+document.getElementById('f-term').value,reptype=document.getElementById('f-reptype').value,startDate=document.getElementById('f-startdate').value;
   if(!principal||!rate||!term||!startDate){document.getElementById('loan-alert').innerHTML=alertBox('Please fill in all required fields.');return;}
+  const{monthly}=calcLoan(principal,rate,term,reptype);
   loans.push({id:uid(),borrowerId,principal,rate,term,reptype,startDate,notes:'From online application',createdAt:todayStr()});
-  persist();closeModal();renderDashboard();
+  persist();renderDashboard();
+  // Show customer notification modal
+  const a=applications.find(x=>x.id===appId);
+  if(a)showNotifyModal(a,'approved',{principal,rate,term,monthly,startDate});
+  else closeModal();
 }
 
 function rejectApp(id){
-  if(!confirm('Reject this application?'))return;
-  const a=applications.find(x=>x.id===id);if(a)a.status='rejected';
+  const a=applications.find(x=>x.id===id);if(!a)return;
+  openModal(mhdr('Reject application')+`
+    <div style="background:#fcebeb;border:1px solid #F09595;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#791F1F;">
+      You are about to reject the application from <strong>${a.first} ${a.last}</strong> for <strong>${fmt(a.amount)}</strong>.
+    </div>
+    <div class="field" style="margin-bottom:6px;">
+      <label>Rejection reason <span style="color:#aaa;font-weight:400;">(optional — included in customer notification)</span></label>
+      <textarea id="reject-reason" style="width:100%;padding:8px 10px;border:1px solid #c8c8c4;border-radius:8px;font-size:13px;min-height:72px;font-family:inherit;resize:vertical;margin-top:4px;" placeholder="e.g. Insufficient income, incomplete documentation, existing debt..."></textarea>
+    </div>
+    <div class="modal-ftr">
+      <button onclick="closeModal()" class="btn-ghost">Cancel</button>
+      <button onclick="confirmReject('${id}')" style="padding:8px 16px;background:#E24B4A;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;">Reject &amp; notify</button>
+    </div>`);
+}
+
+function confirmReject(id){
+  const a=applications.find(x=>x.id===id);if(!a)return;
+  const reason=(document.getElementById('reject-reason')||{}).value||'';
+  a.status='rejected';
+  if(reason.trim())a.rejectionReason=reason.trim();
   persist();updateAppBadge();renderApplications();
   updateSheetStatus(id,'rejected');
+  showNotifyModal(a,'rejected',{});
 }
 
 function renderLoans(){
