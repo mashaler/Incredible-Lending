@@ -821,7 +821,7 @@ function renderApplications(){
         <strong>Purpose:</strong> ${a.purpose}${a.notes?'<br><strong>Notes:</strong> '+a.notes:''}${a.address?'<br><strong>Address:</strong> '+a.address:''}
       </div>
       ${appFilter==='pending'
-        ?'<div style="display:flex;gap:8px;"><button onclick="approveApp('' +a.id+ ''" class="btn-sm success">&#10003; Approve</button><button onclick="rejectApp('' +a.id+ ''" class="btn-sm danger">&#215; Reject</button></div>'
+        ?`<div style="display:flex;gap:8px;"><button onclick="approveApp('${a.id}')" class="btn-sm success">&#10003; Approve</button><button onclick="rejectApp('${a.id}')" class="btn-sm danger">&#215; Reject</button></div>`
         :buildNotifyLinks(a)
       }
     </div>`).join('');
