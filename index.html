@@ -842,35 +842,56 @@ function showNotifyModal(a,decision,loan){
     mailBody='Hi '+name+',\n\nThank you for applying with Incredible Lending.\n\nAfter reviewing your application for '+amt+', we are unable to proceed at this time.'+(reason?'\n\nReason: '+reason:'')+'\n\nPlease do not hesitate to reach out if you have any questions.\n\nKind regards,\nIncredible Lending';
   }
 
-  // ── Build hrefs (encodeURIComponent output is HTML-attribute safe — no quotes) ──
+  // ── Store messages globally so onclick handlers can access them safely ──
   const waNum=fmtWAPhone(a.phone||'');
   const hasWA=waNum.length>=11;
   const hasEmail=!!(a.email&&a.email.includes('@'));
-  const waHref='https://wa.me/'+waNum+'?text='+encodeURIComponent(waMsg);
-  const mailHref='mailto:'+(a.email||'')+'?subject='+encodeURIComponent(mailSubj)+'&body='+encodeURIComponent(mailBody);
 
-  // ── Build modal HTML using <a> tags (most reliable — no onclick, no popup blockers) ──
+  // Store on window so inline onclick can reach them (avoids any quote-escaping issues)
+  window._notifyWAUrl  = hasWA    ? 'https://wa.me/'+waNum+'?text='+encodeURIComponent(waMsg) : '';
+  window._notifyMailUrl= hasEmail ? 'mailto:'+(a.email||'')+'?subject='+encodeURIComponent(mailSubj)+'&body='+encodeURIComponent(mailBody) : '';
+
+  // ── Build modal HTML — buttons use onclick so the browser sees a real user gesture ──
   let h=mhdr('Notify customer');
   h+='<div style="background:'+bg+';border:1px solid '+bc+';border-radius:8px;padding:11px 14px;margin-bottom:16px;font-size:13px;color:'+col+';font-weight:600;">';
   h+=(ok?'✓ Approved':'✕ Rejected')+' &mdash; '+name+' '+last+', '+amt+'</div>';
   h+='<p style="font-size:13px;color:#555;margin-bottom:12px;">Choose how to notify the customer:</p>';
   h+='<div style="display:flex;flex-direction:column;gap:10px;">';
+
   if(hasWA){
-    h+='<a href="'+waHref+'" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:#25D366;color:#fff;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;">';
+    h+='<button onclick="openWA()" style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:#25D366;color:#fff;border-radius:10px;font-size:14px;font-weight:600;border:none;cursor:pointer;width:100%;text-align:left;font-family:inherit;">';
     h+='<span style="font-size:22px;">&#128172;</span>';
-    h+='<div><div>Send WhatsApp</div><div style="font-size:11px;font-weight:400;opacity:0.85;">'+(a.phone||'')+'</div></div></a>';
+    h+='<div><div>Send WhatsApp</div><div style="font-size:11px;font-weight:400;opacity:0.85;">'+(a.phone||'')+'</div></div></button>';
   }else{
     h+='<div style="padding:10px;background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;font-size:12px;color:#888;">No phone number on file &mdash; WhatsApp unavailable</div>';
   }
+
   if(hasEmail){
-    h+='<a href="'+mailHref+'" style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:#378ADD;color:#fff;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;">';
+    h+='<button onclick="openMail()" style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:#378ADD;color:#fff;border-radius:10px;font-size:14px;font-weight:600;border:none;cursor:pointer;width:100%;text-align:left;font-family:inherit;">';
     h+='<span style="font-size:22px;">&#9993;</span>';
-    h+='<div><div>Send Email</div><div style="font-size:11px;font-weight:400;opacity:0.85;">'+(a.email||'')+'</div></div></a>';
+    h+='<div><div>Send Email</div><div style="font-size:11px;font-weight:400;opacity:0.85;">'+(a.email||'')+'</div></div></button>';
   }else{
     h+='<div style="padding:10px;background:#f7f7f5;border:1px solid #d8d8d4;border-radius:8px;font-size:12px;color:#888;">No email address on file &mdash; email unavailable</div>';
   }
-  h+='</div><div class="modal-ftr"><button onclick="closeModal()" class="btn-ghost">Done</button></div>';
+
+  h+='</div>';
+  h+='<div style="margin-top:14px;padding:10px 12px;background:#f7f7f5;border-radius:8px;border:1px solid #d8d8d4;font-size:12px;color:#888;line-height:1.5;">';
+  h+='<strong style="color:#555;">Message preview:</strong><br><span id="notify-preview-text" style="white-space:pre-wrap;color:#333;">'+(ok?waMsg.replace(/\*/g,''):waMsg)+'</span></div>';
+  h+='<div class="modal-ftr"><button onclick="closeModal()" class="btn-ghost">Done</button></div>';
   openModal(h);
+}
+
+// ── Notification openers — called by onclick so browser treats as direct user gesture ──
+function openWA(){
+  const url=window._notifyWAUrl;
+  if(!url)return;
+  const w=window.open(url,'_blank','noopener,noreferrer');
+  if(!w||w.closed||typeof w.closed==='undefined'){window.location.href=url;}
+}
+function openMail(){
+  const url=window._notifyMailUrl;
+  if(!url)return;
+  window.location.href=url;
 }
 
 function renderLoans(){
